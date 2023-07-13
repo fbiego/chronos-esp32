@@ -19,8 +19,8 @@ Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 ## Functions
 
 ```
-Chronos();
-Chronos(String name); // set the BLE name
+ChronosESP32();
+ChronosESP32(String name); // set the BLE name
 void begin(); // initializes BLE
 void loop(); // handles routine functions
 void setLogging(bool state); // to view raw data receive over BLE

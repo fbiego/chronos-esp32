@@ -30,10 +30,10 @@
 
 */
 
-#include <Chronos.h>
+#include <ChronosESP32.h>
 
-Chronos watch;
-// Chronos watch("Chronos Watch"); // set the bluetooth name
+ChronosESP32 watch;
+// ChronosESP32 watch("Chronos Watch"); // set the bluetooth name
 
 void connectionCallback(bool state)
 {

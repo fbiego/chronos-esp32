@@ -31,7 +31,7 @@
 */
 
 #include <Arduino.h>
-#include "Chronos.h"
+#include "ChronosESP32.h"
 
 #define SERVICE_UUID "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
 #define CHARACTERISTIC_UUID_RX "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
@@ -41,19 +41,19 @@ static BLECharacteristic *pCharacteristicTX;
 static BLECharacteristic *pCharacteristicRX;
 
 /*!
-	@brief  Constructor for Chronos
+	@brief  Constructor for ChronosESP32
 */
-Chronos::Chronos()
+ChronosESP32::ChronosESP32()
 {
 	connected = false;
 }
 
 /*!
-	@brief  Constructor for Chronos
+	@brief  Constructor for ChronosESP32
 	@param  name
 			Bluetooth name
 */
-Chronos::Chronos(String name)
+ChronosESP32::ChronosESP32(String name)
 {
 	connected = false;
 	watchName = name;
@@ -62,7 +62,7 @@ Chronos::Chronos(String name)
 /*!
 	@brief  begin
 */
-void Chronos::begin()
+void ChronosESP32::begin()
 {
 	BLEDevice::init(watchName.c_str());
 	BLEServer *pServer = BLEDevice::createServer();
@@ -95,7 +95,7 @@ void Chronos::begin()
 /*!
 	@brief  loop
 */
-void Chronos::loop()
+void ChronosESP32::loop()
 {
 	if (connected)
 	{
@@ -132,7 +132,7 @@ void Chronos::loop()
 	@param	state
 			new state of logging
 */
-void Chronos::setLogging(bool state)
+void ChronosESP32::setLogging(bool state)
 {
 	logging = state;
 }
@@ -140,7 +140,7 @@ void Chronos::setLogging(bool state)
 /*!
 	@brief  check whether the device is connected
 */
-bool Chronos::isConnected()
+bool ChronosESP32::isConnected()
 {
 	return connected;
 }
@@ -150,14 +150,14 @@ bool Chronos::isConnected()
 	@param  mode
 			enable or disable state
 */
-void Chronos::set24Hour(bool mode){
+void ChronosESP32::set24Hour(bool mode){
 	hour24 = mode;
 }
 
 /*!
 	@brief  return the 24 hour mode
 */
-bool Chronos::is24Hour()
+bool ChronosESP32::is24Hour()
 {
 	return hour24;
 }
@@ -165,7 +165,7 @@ bool Chronos::is24Hour()
 /*!
 	@brief  return the mac address
 */
-String Chronos::getAddress()
+String ChronosESP32::getAddress()
 {
 	return address;
 }
@@ -175,7 +175,7 @@ String Chronos::getAddress()
 	@param	level
 			battery level
 */
-void Chronos::setBattery(uint8_t level)
+void ChronosESP32::setBattery(uint8_t level)
 {
 	if (batteryLevel != level)
 	{
@@ -187,7 +187,7 @@ void Chronos::setBattery(uint8_t level)
 /*!
 	@brief  return the number of notifications in the buffer
 */
-int Chronos::getNotificationCount()
+int ChronosESP32::getNotificationCount()
 {
 	if (notificationIndex + 1 >= NOTIF_SIZE)
 	{
@@ -204,7 +204,7 @@ int Chronos::getNotificationCount()
 	@param  index
 			position of the notification to be returned, at 0 is the latest received
 */
-Notification Chronos::getNotificationAt(int index)
+Notification ChronosESP32::getNotificationAt(int index)
 {
 	int latestIndex = (notificationIndex - index + NOTIF_SIZE) % NOTIF_SIZE;
 	return notifications[latestIndex];
@@ -213,7 +213,7 @@ Notification Chronos::getNotificationAt(int index)
 /*!
 	@brief  clear the notificaitons
 */
-void Chronos::clearNotifications()
+void ChronosESP32::clearNotifications()
 {
 	// here we just set the index to -1, existing data at the buffer will be overwritten
 	// getNotificationCount() will return 0 but getNotificationAt() will return previous existing data
@@ -224,7 +224,7 @@ void Chronos::clearNotifications()
 /*!
 	@brief  return the weather count
 */
-int Chronos::getWeatherCount()
+int ChronosESP32::getWeatherCount()
 {
 	return weatherSize;
 }
@@ -232,7 +232,7 @@ int Chronos::getWeatherCount()
 /*!
 	@brief  return the weather city name
 */
-String Chronos::getWeatherCity()
+String ChronosESP32::getWeatherCity()
 {
 	return weatherCity;
 }
@@ -240,7 +240,7 @@ String Chronos::getWeatherCity()
 /*!
 	@brief  return the weather update time
 */
-String Chronos::getWeatherTime()
+String ChronosESP32::getWeatherTime()
 {
 	return weatherTime;
 }
@@ -250,7 +250,7 @@ String Chronos::getWeatherTime()
 	@param  index
 			position of the weather to be returned
 */
-Weather Chronos::getWeatherAt(int index)
+Weather ChronosESP32::getWeatherAt(int index)
 {
 	return weather[index % WEATHER_SIZE];
 }
@@ -260,7 +260,7 @@ Weather Chronos::getWeatherAt(int index)
 	@param	index
 			position of the alarm to be returned
 */
-Alarm Chronos::getAlarm(int index)
+Alarm ChronosESP32::getAlarm(int index)
 {
 	return alarms[index % ALARM_SIZE];
 }
@@ -272,7 +272,7 @@ Alarm Chronos::getAlarm(int index)
 	@param  alarm
 			the alarm object
 */
-void Chronos::setAlarm(int index, Alarm alarm)
+void ChronosESP32::setAlarm(int index, Alarm alarm)
 {
 	alarms[index % ALARM_SIZE] = alarm;
 }
@@ -284,7 +284,7 @@ void Chronos::setAlarm(int index, Alarm alarm)
 	@param  length
 			command length
 */
-void Chronos::sendCommand(uint8_t *command, size_t length)
+void ChronosESP32::sendCommand(uint8_t *command, size_t length)
 {
 	pCharacteristicTX->setValue(command, length);
 	pCharacteristicTX->notify();
@@ -296,7 +296,7 @@ void Chronos::sendCommand(uint8_t *command, size_t length)
 	@param  command
 			music action
 */
-void Chronos::musicControl(uint16_t command)
+void ChronosESP32::musicControl(uint16_t command)
 {
 	uint8_t musicCmd[] = {0xAB, 0x00, 0x04, 0xFF, (uint8_t)(command >> 8), 0x80,(uint8_t)(command)};
 	pCharacteristicTX->setValue(musicCmd, 7);
@@ -309,7 +309,7 @@ void Chronos::musicControl(uint16_t command)
 	@param  state
 			enable or disable state
 */
-void Chronos::findPhone(bool state)
+void ChronosESP32::findPhone(bool state)
 {
 	findTimer.active = state;
 	uint8_t c = state ? 0x01 : 0x00;
@@ -322,7 +322,7 @@ void Chronos::findPhone(bool state)
 /*!
 	@brief  get the hour based on hour 24 mode
 */
-int Chronos::getHourC()
+int ChronosESP32::getHourC()
 {
 	return this->getHour(hour24); 
 }
@@ -330,7 +330,7 @@ int Chronos::getHourC()
 /*!
 	@brief  get the zero padded hour based on hour 24 mode
 */
-String Chronos::getHourZ()
+String ChronosESP32::getHourZ()
 {
 	if (hour24){
 		return this->getTime("%H"); 
@@ -344,7 +344,7 @@ String Chronos::getHourZ()
 	@param	caps
 			capital letters mode
 */
-String Chronos::getAmPmC(bool caps)
+String ChronosESP32::getAmPmC(bool caps)
 {
 	if (hour24){
 		return "";
@@ -357,7 +357,7 @@ String Chronos::getAmPmC(bool caps)
 /*!
 	@brief  set the connection callback
 */
-void Chronos::setConnectionCallback(void (*callback)(bool))
+void ChronosESP32::setConnectionCallback(void (*callback)(bool))
 {
 	connectionChangeCallback = callback;
 }
@@ -365,7 +365,7 @@ void Chronos::setConnectionCallback(void (*callback)(bool))
 /*!
 	@brief  set the notification callback
 */
-void Chronos::setNotificationCallback(void (*callback)(Notification))
+void ChronosESP32::setNotificationCallback(void (*callback)(Notification))
 {
 	notificationReceivedCallback = callback;
 }
@@ -373,7 +373,7 @@ void Chronos::setNotificationCallback(void (*callback)(Notification))
 /*!
 	@brief  set the configuration callback
 */
-void Chronos::setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t))
+void ChronosESP32::setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t))
 {
 	configurationReceivedCallback = callback;
 }
@@ -381,7 +381,7 @@ void Chronos::setConfigurationCallback(void (*callback)(Config, uint32_t, uint32
 /*!
 	@brief  send the info proprerties to the app
 */
-void Chronos::sendInfo()
+void ChronosESP32::sendInfo()
 {
 	uint8_t infoCmd[] = {0xab, 0x00, 0x11, 0xff, 0x92, 0xc0, 0x01, 0x00, 0x00, 0xfb, 0x1e, 0x40, 0xc0, 0x0e, 0x32, 0x28, 0x00, 0xe2, 0x07, 0x80};
 	pCharacteristicTX->setValue(infoCmd, 20);
@@ -392,7 +392,7 @@ void Chronos::sendInfo()
 /*!
 	@brief  send the battery level
 */
-void Chronos::sendBattery()
+void ChronosESP32::sendBattery()
 {
 	uint8_t batCmd[] = {0xAB, 0x00, 0x05, 0xFF, 0x91, 0x80, 0x00, batteryLevel};
 	pCharacteristicTX->setValue(batCmd, 8);
@@ -405,7 +405,7 @@ void Chronos::sendBattery()
 	@param  id
 			identifier of the app icon
 */
-String Chronos::appName(int id)
+String ChronosESP32::appName(int id)
 {
 	switch (id)
 	{
@@ -450,7 +450,7 @@ String Chronos::appName(int id)
 	case 0x22:
 		return "WearFit Pro";
 	case 0xC0:
-		return "Chronos";
+		return "ChronosESP32";
 	default:
 		return "Message";
 	}
@@ -462,7 +462,7 @@ String Chronos::appName(int id)
 	@param  pServer
 			BLE server object
 */
-void Chronos::onConnect(BLEServer *pServer)
+void ChronosESP32::onConnect(BLEServer *pServer)
 {
 	connected = true;
 	infoTimer.active = true;
@@ -478,7 +478,7 @@ void Chronos::onConnect(BLEServer *pServer)
 	@param  pServer
 			BLE server object
 */
-void Chronos::onDisconnect(BLEServer *pServer)
+void ChronosESP32::onDisconnect(BLEServer *pServer)
 {
 	connected = false;
 	BLEDevice::startAdvertising();
@@ -493,7 +493,7 @@ void Chronos::onDisconnect(BLEServer *pServer)
 	@param  pCharacteristic
 			the BLECharacteristic object
 */
-void Chronos::onWrite(BLECharacteristic *pCharacteristic)
+void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 {
 	std::string pData = pCharacteristic->getValue();
 	int len = pData.length();

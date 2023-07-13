@@ -30,8 +30,8 @@
 
 */
 
-#ifndef CHRONOS_H
-#define CHRONOS_H
+#ifndef CHRONOSESP32_H
+#define CHRONOSESP32_H
 
 #include <Arduino.h>
 #include <NimBLEDevice.h>
@@ -62,7 +62,7 @@ struct Weather
 	int temp;
 };
 
-struct ChronosTimer
+struct ChronosESP32Timer
 {
 	unsigned long time;
 	long duration = 5000;
@@ -97,12 +97,12 @@ enum Config
 	CF_WEATHER	 // weather config (a Weekly) (b City Name) -
 };
 
-class Chronos : public BLEServerCallbacks, public BLECharacteristicCallbacks, public ESP32Time
+class ChronosESP32 : public BLEServerCallbacks, public BLECharacteristicCallbacks, public ESP32Time
 {
 
 public:
-	Chronos();
-	Chronos(String name);		 // set the BLE name
+	ChronosESP32();
+	ChronosESP32(String name);		 // set the BLE name
 	void begin();				 // initializes BLE
 	void loop();				 // handles routine functions
 	void setLogging(bool state); // to view raw data receive over BLE
@@ -164,8 +164,8 @@ private:
 
 	Alarm alarms[ALARM_SIZE];
 
-	ChronosTimer infoTimer;
-	ChronosTimer findTimer;
+	ChronosESP32Timer infoTimer;
+	ChronosESP32Timer findTimer;
 
 	void (*connectionChangeCallback)(bool) = nullptr;
 	void (*notificationReceivedCallback)(Notification) = nullptr;

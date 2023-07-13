@@ -30,13 +30,13 @@
 
 */
 
-#include <Chronos.h>
+#include <ChronosESP32.h>
 
 #define BUTTON_PIN 0
 #define LED_PIN 2
 
-Chronos watch;
-// Chronos watch("Chronos Watch"); // set the bluetooth name
+ChronosESP32 watch;
+// ChronosESP32 watch("Chronos Watch"); // set the bluetooth name
 
 volatile bool buttonPressed = false;
 
@@ -83,7 +83,7 @@ void loop()
         // music control,
         watch.musicControl(MUSIC_TOGGLE); // MUSIC_PLAY, MUSIC_PAUSE, MUSIC_PREVIOUS, MUSIC_NEXT, MUSIC_TOGGLE
         Serial.println("Sent music command");
-        
+
         // find phone
         // watch.findPhone(true); // true -> ring the phone, false -> stop the ringing, the ringing will also be stopped automatically after 10 seconds;
     }

@@ -1,0 +1,20 @@
+Chronos		KEYWORD1
+
+begin		KEYWORD2
+loop		KEYWORD2
+isConnected		KEYWORD2
+getAddress		KEYWORD2
+getNotificationCount		KEYWORD2
+getNotificationAt		KEYWORD2
+clearNotifications		KEYWORD2
+getWeatherCount		KEYWORD2
+getWeatherCity		KEYWORD2
+getWeatherTime		KEYWORD2
+getWeatherAt		KEYWORD2
+getAlarm		KEYWORD2
+setAlarm		KEYWORD2
+setConnectionCallback		KEYWORD2
+setNotificationCallback		KEYWORD2
+setConfigurationCallback		KEYWORD2
+setLogging		KEYWORD2
+setBattery		KEYWORD2

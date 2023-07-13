@@ -1,0 +1,21 @@
+{
+  "name": "Chronos",
+  "version": "1.0.0",
+  "keywords": "Arduino, ESP32, Time, BLE, Watch",
+  "description": "A library for ESP32 to interface with Chronos app over BLE",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/fbiego/chronos-esp32"
+  },
+  "authors":
+  [
+    {
+        "name": "fbiego",
+        "email": "fbiego.fb@gmail.com",
+        "maintainer": true
+    }
+  ],
+  "frameworks": "arduino",
+  "platforms": " espressif32"
+}

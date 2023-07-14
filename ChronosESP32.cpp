@@ -312,6 +312,9 @@ void ChronosESP32::musicControl(uint16_t command)
 void ChronosESP32::findPhone(bool state)
 {
 	findTimer.active = state;
+	if (state){
+		findTimer.time = millis();
+	}
 	uint8_t c = state ? 0x01 : 0x00;
 	uint8_t findCmd[] = {0xAB, 0x00, 0x04, 0xFF, 0x7D, 0x80, c};
 	pCharacteristicTX->setValue(findCmd, 7);

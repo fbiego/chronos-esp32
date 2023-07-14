@@ -2,6 +2,9 @@
 A wrapper library for ESP32 to facilitate easy setup of a smartwatch like project. Supports syncing of notifications from the phone.
 Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 
+[![arduino-library-badge](https://www.ardu-badge.com/badge/ChronosESP32.svg?)](https://www.arduinolibraries.info/libraries/chronos-esp32)
+[![PlatformIO Registry](https://badges.registry.platformio.org/packages/fbiego/library/ChronosESP32.svg)](https://registry.platformio.org/libraries/fbiego/ChronosESP32)
+
 
 ## Features
 

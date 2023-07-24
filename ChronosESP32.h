@@ -94,7 +94,8 @@ enum Config
 	CF_SLEEP,	 // sleep time (hour)(minute)(hour)(minute)(enabled) -
 	CF_QUIET,	 // quiet hours (hour)(minute)(hour)(minute)(enabled) -
 	CF_WATER,	 // water reminder (hour)(minute)(hour)(minute)(interval)(enabled)-
-	CF_WEATHER	 // weather config (a Weekly) (b City Name) -
+	CF_WEATHER,	 // weather config (a Weekly) (b City Name) -
+	CF_CAMERA	 // camera config, (ready state)
 };
 
 class ChronosESP32 : public BLEServerCallbacks, public BLECharacteristicCallbacks, public ESP32Time
@@ -113,6 +114,7 @@ public:
 	bool is24Hour();
 	String getAddress();
 	void setBattery(uint8_t level);
+	bool isCameraReady();
 
 	// notifications
 	int getNotificationCount();
@@ -132,6 +134,7 @@ public:
 	// control
 	void sendCommand(uint8_t *command, size_t length);
 	void musicControl(uint16_t command);
+	bool capturePhoto();
 	void findPhone(bool state);
 
 	// helper functions for ESP32Time
@@ -143,6 +146,7 @@ public:
 	void setConnectionCallback(void (*callback)(bool));
 	void setNotificationCallback(void (*callback)(Notification));
 	void setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t));
+	void setDataCallback(void (*callback)(uint8_t *, int));
 
 private:
 	String watchName = "Chronos ESP32";
@@ -152,6 +156,9 @@ private:
 	bool batteryChanged;
 	bool logging;
 	bool hour24;
+	bool cameraReady;
+
+	bool receiving;
 
 	Notification notifications[NOTIF_SIZE];
 	int notificationIndex;
@@ -170,6 +177,7 @@ private:
 	void (*connectionChangeCallback)(bool) = nullptr;
 	void (*notificationReceivedCallback)(Notification) = nullptr;
 	void (*configurationReceivedCallback)(Config, uint32_t, uint32_t) = nullptr;
+	void (*dataReceivedCallback)(uint8_t *, int) = nullptr;
 
 	void sendInfo();
 	void sendBattery();

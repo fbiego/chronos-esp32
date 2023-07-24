@@ -11,13 +11,13 @@ Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 - Time
 - Notifications
 - Weather
-- Controls (Music, Find Phone)
+- Controls (Music, Find Phone, Camera)
 - Alarms (only received & stored)
 
 ## App
-- Chronos
+
 <a href='https://fbiego.com/chronos/app?id=esp32'><img alt='Download Chronos' height="100px" src='https://fbiego.com/chronos/img/chronos.png'/></a>
-> Android only
+> Chronos
 
 ## Functions
 
@@ -34,6 +34,7 @@ void set24Hour(bool mode);
 bool is24Hour();
 String getAddress();
 void setBattery(uint8_t level);
+bool isCameraReady();
 
 // notifications
 int getNotificationCount();
@@ -53,6 +54,7 @@ void setAlarm(int index, Alarm alarm);
 // control
 void sendCommand(uint8_t *command, size_t length);
 void musicControl(uint16_t command);
+bool capturePhoto();
 void findPhone(bool state);
 
 // helper functions for ESP32Time
@@ -64,6 +66,7 @@ String getAmPmC(bool caps = true); // return (no caps)am/pm or (caps)AM/PM for 1
 void setConnectionCallback(void (*callback)(bool));
 void setNotificationCallback(void (*callback)(Notification));
 void setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t));
+void setDataCallback(void (*callback)(uint8_t *, int));
 ```
 
 ## Dependencies

@@ -1,6 +1,6 @@
 {
   "name": "ChronosESP32",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "keywords": "Arduino, ESP32, Time, BLE, Watch",
   "description": "A library for ESP32 to interface with Chronos app over BLE",
   "repository":
@@ -19,8 +19,8 @@
   "frameworks": "arduino",
   "platforms": "espressif32",
   "dependencies": {
-    "h2zero/NimBLE-Arduino": ">=1.4.1",
-	  "fbiego/ESP32Time": ">=2.0.0"
+    "h2zero/NimBLE-Arduino": "*",
+	  "fbiego/ESP32Time": "*"
   },
   "headers": "ChronosESP32.h"
 }

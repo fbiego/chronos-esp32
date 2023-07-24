@@ -184,6 +184,12 @@ void configCallback(Config config, uint32_t a, uint32_t b)
     Serial.print("24 hour mode: ");
     Serial.println(b ? "ON" : "OFF");
     break;
+  case CF_CAMERA:
+    // state is saved internally
+    // bool camera =  watch.isCameraReady(); // to access outside the callback
+    Serial.print("Camera: ");
+    Serial.println(b ? "Active" : "Inactive");
+    break;
   case CF_LANG:
     // state not saved internally
     Serial.print("Language: ");
@@ -208,35 +214,45 @@ void configCallback(Config config, uint32_t a, uint32_t b)
   }
 }
 
+void dataCallback(uint8_t *data, int length)
+{
+  Serial.println("Received Data");
+  for (int i = 0; i < length; i++)
+  {
+    Serial.printf("%02X ", data[i]);
+  }
+  Serial.println();
+}
+
 void setup()
 {
   Serial.begin(115200);
 
-  watch.setLogging(true); // to view the raw received data over BLE
+  watch.setLogging(false); // to view the raw received data over BLE (use the data callback instead)
   watch.setConnectionCallback(connectionCallback);
   watch.setNotificationCallback(notificationCallback);
   watch.setConfigurationCallback(configCallback);
+  watch.setDataCallback(dataCallback);
 
   watch.begin(); // initializes the BLE
   // go to Chronos app > Watches tab > Watches button > Pair New Devices > Search > Select your board
   // you only need to do it once. To disconnect, click on the rotating icon
 
   Serial.println(watch.getAddress()); // mac address, call after begin()
-  
-  watch.setBattery(80);  // set the battery level, will be synced to the app
 
+  watch.setBattery(80); // set the battery level, will be synced to the app
 
   watch.set24Hour(true); // the 24 hour mode will be overwritten when the command is received from the app
-  // this modifies the return of 
+  // this modifies the return of
   watch.getAmPmC(true); // 12 hour mode false->(am/pm), true->(AM/PM), if 24 hour mode returns empty string ("")
-  watch.getHourC(); // (0-12), (0-23)
-  watch.getHourZ(); // zero padded hour (00-12), (00-23) 
-  watch.is24Hour(); // resturns whether in 24 hour mode
+  watch.getHourC();     // (0-12), (0-23)
+  watch.getHourZ();     // zero padded hour (00-12), (00-23)
+  watch.is24Hour();     // resturns whether in 24 hour mode
 }
 
 void loop()
 {
-  watch.loop(); // handles internal routine functions 
+  watch.loop(); // handles internal routine functions
 
   String time = watch.getHourC() + watch.getTime(":%M ") + watch.getAmPmC();
   Serial.println(time);
@@ -292,9 +308,9 @@ void loop()
     // iterate through available notifications, index 0 is the latest received notification
     Weather w = watch.getWeatherAt(i);
     Serial.print("Day:"); // day of the week (0 - 6)
-    Serial.println(w.day);
+    Serial.print(w.day);
     Serial.print("\tIcon: ");
-    Serial.println(w.icon);
+    Serial.print(w.icon);
     Serial.print("\t");
     Serial.print(w.temp);
     Serial.println("C");

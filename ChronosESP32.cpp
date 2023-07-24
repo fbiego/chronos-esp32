@@ -46,6 +46,8 @@ static BLECharacteristic *pCharacteristicRX;
 ChronosESP32::ChronosESP32()
 {
 	connected = false;
+	cameraReady = false;
+	receiving = false;
 }
 
 /*!
@@ -55,8 +57,8 @@ ChronosESP32::ChronosESP32()
 */
 ChronosESP32::ChronosESP32(String name)
 {
-	connected = false;
 	watchName = name;
+	ChronosESP32();
 }
 
 /*!
@@ -150,7 +152,8 @@ bool ChronosESP32::isConnected()
 	@param  mode
 			enable or disable state
 */
-void ChronosESP32::set24Hour(bool mode){
+void ChronosESP32::set24Hour(bool mode)
+{
 	hour24 = mode;
 }
 
@@ -182,6 +185,14 @@ void ChronosESP32::setBattery(uint8_t level)
 		batteryChanged = true;
 		batteryLevel = level;
 	}
+}
+
+/*!
+	@brief  return camera status
+*/
+bool ChronosESP32::isCameraReady()
+{
+	return cameraReady;
 }
 
 /*!
@@ -219,7 +230,6 @@ void ChronosESP32::clearNotifications()
 	// getNotificationCount() will return 0 but getNotificationAt() will return previous existing data
 	notificationIndex = -1;
 }
-
 
 /*!
 	@brief  return the weather count
@@ -298,10 +308,25 @@ void ChronosESP32::sendCommand(uint8_t *command, size_t length)
 */
 void ChronosESP32::musicControl(uint16_t command)
 {
-	uint8_t musicCmd[] = {0xAB, 0x00, 0x04, 0xFF, (uint8_t)(command >> 8), 0x80,(uint8_t)(command)};
+	uint8_t musicCmd[] = {0xAB, 0x00, 0x04, 0xFF, (uint8_t)(command >> 8), 0x80, (uint8_t)(command)};
 	pCharacteristicTX->setValue(musicCmd, 7);
 	pCharacteristicTX->notify();
 	vTaskDelay(200);
+}
+
+/*!
+	@brief  send capture photo command to the app
+*/
+bool ChronosESP32::capturePhoto()
+{
+	if (cameraReady)
+	{
+		uint8_t captureCmd[] = {0xAB, 0x00, 0x04, 0xFF, 0x79, 0x80, 0x01};
+		pCharacteristicTX->setValue(captureCmd, 7);
+		pCharacteristicTX->notify();
+		vTaskDelay(200);
+	}
+	return cameraReady;
 }
 
 /*!
@@ -312,7 +337,8 @@ void ChronosESP32::musicControl(uint16_t command)
 void ChronosESP32::findPhone(bool state)
 {
 	findTimer.active = state;
-	if (state){
+	if (state)
+	{
 		findTimer.time = millis();
 	}
 	uint8_t c = state ? 0x01 : 0x00;
@@ -327,7 +353,7 @@ void ChronosESP32::findPhone(bool state)
 */
 int ChronosESP32::getHourC()
 {
-	return this->getHour(hour24); 
+	return this->getHour(hour24);
 }
 
 /*!
@@ -335,10 +361,13 @@ int ChronosESP32::getHourC()
 */
 String ChronosESP32::getHourZ()
 {
-	if (hour24){
-		return this->getTime("%H"); 
-	} else {
-		return this->getTime("%I"); 
+	if (hour24)
+	{
+		return this->getTime("%H");
+	}
+	else
+	{
+		return this->getTime("%I");
 	}
 }
 
@@ -349,9 +378,12 @@ String ChronosESP32::getHourZ()
 */
 String ChronosESP32::getAmPmC(bool caps)
 {
-	if (hour24){
+	if (hour24)
+	{
 		return "";
-	} else {
+	}
+	else
+	{
 		return this->getAmPm(caps);
 	}
 	return "";
@@ -379,6 +411,14 @@ void ChronosESP32::setNotificationCallback(void (*callback)(Notification))
 void ChronosESP32::setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t))
 {
 	configurationReceivedCallback = callback;
+}
+
+/*!
+	@brief  set the data callback
+*/
+void ChronosESP32::setDataCallback(void (*callback)(uint8_t *, int))
+{
+	dataReceivedCallback = callback;
 }
 
 /*!
@@ -459,7 +499,6 @@ String ChronosESP32::appName(int id)
 	}
 }
 
-
 /*!
 	@brief  onConnect from BLEServerCallbacks
 	@param  pServer
@@ -484,6 +523,7 @@ void ChronosESP32::onConnect(BLEServer *pServer)
 void ChronosESP32::onDisconnect(BLEServer *pServer)
 {
 	connected = false;
+	cameraReady = false;
 	BLEDevice::startAdvertising();
 	if (connectionChangeCallback != nullptr)
 	{
@@ -509,6 +549,10 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 				Serial.printf("%02X ", pData[i]);
 			}
 			Serial.println();
+		}
+		if (dataReceivedCallback != nullptr)
+		{
+			dataReceivedCallback((uint8_t *)pData.data(), len);
 		}
 		if (pData[0] == 0xAB)
 		{
@@ -570,10 +614,16 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 				if (msgLen <= 19)
 				{
 					// message is complete
+					receiving = false;
 					if (notificationReceivedCallback != nullptr)
 					{
 						notificationReceivedCallback(notifications[notificationIndex % NOTIF_SIZE]);
 					}
+				}
+				else
+				{
+					// message not complete
+					receiving = true;
 				}
 			}
 			break;
@@ -649,6 +699,13 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 					configurationReceivedCallback(CF_HOURLY, 0, (uint32_t)pData[6]);
 				}
 				break;
+			case 0x79:
+				cameraReady = ((uint8_t)pData[6] == 1);
+				if (configurationReceivedCallback != nullptr)
+				{
+					configurationReceivedCallback(CF_CAMERA, 0, (uint32_t)pData[6]);
+				}
+				break;
 			case 0x7B:
 				if (configurationReceivedCallback != nullptr)
 				{
@@ -719,7 +776,7 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 		}
 		else if (pData[0] == 0xEA)
 		{
-			if (pData[4] == 0x7E)
+			if (pData[4] == 0x7E && pData[5] == 0x01)
 			{
 				String city = "";
 				for (int c = 7; c < len; c++)
@@ -735,22 +792,25 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 		}
 		else if (pData[0] <= 0x0F)
 		{
-			String message = "";
-			for (int i = 1; i < len; i++)
+			if (receiving)
 			{
-				message += (char)pData[i];
-			}
-			notifications[notificationIndex % NOTIF_SIZE].message += message;
-			if (((msgLen > (pData[0] + 1) * 19) && (msgLen <= (pData[0] + 2) * 19)) || (pData[0] == 0x0F))
-			{
-				// message is complete || message is longer than expected, truncate
-
-				if (notificationReceivedCallback != nullptr)
+				String message = "";
+				for (int i = 1; i < len; i++)
 				{
-					notificationReceivedCallback(notifications[notificationIndex % NOTIF_SIZE]);
+					message += (char)pData[i];
+				}
+				notifications[notificationIndex % NOTIF_SIZE].message += message;
+				if (((msgLen > (pData[0] + 1) * 19) && (msgLen <= (pData[0] + 2) * 19)) || (pData[0] == 0x0F))
+				{
+					// message is complete || message is longer than expected, truncate
+					receiving = false;
+
+					if (notificationReceivedCallback != nullptr)
+					{
+						notificationReceivedCallback(notifications[notificationIndex % NOTIF_SIZE]);
+					}
 				}
 			}
 		}
 	}
 }
-

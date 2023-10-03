@@ -24,9 +24,9 @@ Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 ```
 ChronosESP32();
 ChronosESP32(String name); // set the BLE name
+ChronosESP32(String name, ChronosScreen screen); // set the BLE name and screen configuration
 void begin(); // initializes BLE
 void loop(); // handles routine functions
-void setLogging(bool state); // to view raw data receive over BLE
 
 // watch
 bool isConnected();
@@ -54,6 +54,7 @@ void setAlarm(int index, Alarm alarm);
 // control
 void sendCommand(uint8_t *command, size_t length);
 void musicControl(uint16_t command);
+void setVolume(uint8_t level);
 bool capturePhoto();
 void findPhone(bool state);
 
@@ -67,6 +68,7 @@ void setConnectionCallback(void (*callback)(bool));
 void setNotificationCallback(void (*callback)(Notification));
 void setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t));
 void setDataCallback(void (*callback)(uint8_t *, int));
+void setRawDataCallback(void (*callback)(uint8_t *, int));
 ```
 
 ## Dependencies

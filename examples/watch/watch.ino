@@ -34,6 +34,7 @@
 
 ChronosESP32 watch;
 // ChronosESP32 watch("Chronos Watch"); // set the bluetooth name
+// ChronosESP32 watch("Chronos Watch", CS_360x360_130_CTF); // set the bluetooth name and screen configuration
 
 void connectionCallback(bool state)
 {
@@ -48,10 +49,23 @@ void notificationCallback(Notification notification)
   Serial.println(notification.time);
   Serial.print("From: ");
   Serial.print(notification.app);
-  Serial.print("\t Icon->");
+  Serial.print("\tIcon: ");
   Serial.println(notification.icon);
   Serial.println(notification.message);
   // see loop on how to access notifications
+}
+
+void ringerCallback(String caller, bool state)
+{
+  if (state)
+  {
+    Serial.print("Ringer: Incoming call from ");
+    Serial.println(caller);
+  }
+  else
+  {
+    Serial.println("Ringer dismissed");
+  }
 }
 
 void configCallback(Config config, uint32_t a, uint32_t b)
@@ -197,11 +211,38 @@ void configCallback(Config config, uint32_t a, uint32_t b)
     break;
   case CF_WEATHER:
     // weather is saved
-    Serial.print("Weather received: ");
+    Serial.println("Weather received");
     if (a)
     {
-      Serial.print("Forecast");
-      // see loop for weather details
+      // if a == 1, high & low temperature values might not yet be updated
+      if (a == 2)
+      {
+        int n = watch.getWeatherCount();
+        String updateTime = watch.getWeatherTime();
+        Serial.print("Weather Count: ");
+        Serial.print(n);
+        Serial.print("\tUpdated at: ");
+        Serial.println(updateTime);
+
+        for (int i = 0; i < n; i++)
+        {
+          // iterate through available notifications, index 0 is the latest received notification
+          Weather w = watch.getWeatherAt(i);
+          Serial.print("Day:"); // day of the week (0 - 6)
+          Serial.print(w.day);
+          Serial.print("\tIcon:");
+          Serial.print(w.icon);
+          Serial.print("\t");
+          Serial.print(w.temp);
+          Serial.print("°C");
+          Serial.print("\tHigh:");
+          Serial.print(w.high);
+          Serial.print("°C");
+          Serial.print("\tLow:");
+          Serial.print(w.low);
+          Serial.println("°C");
+        }
+      }
     }
     if (b)
     {
@@ -228,9 +269,10 @@ void setup()
 {
   Serial.begin(115200);
 
-  watch.setLogging(false); // to view the raw received data over BLE (use the data callback instead)
+  // set the callbacks before calling begin funtion
   watch.setConnectionCallback(connectionCallback);
   watch.setNotificationCallback(notificationCallback);
+  watch.setRingerCallback(ringerCallback);
   watch.setConfigurationCallback(configCallback);
   watch.setDataCallback(dataCallback);
 
@@ -242,8 +284,10 @@ void setup()
 
   watch.setBattery(80); // set the battery level, will be synced to the app
 
+  // watch.clearNotifications();
+
   watch.set24Hour(true); // the 24 hour mode will be overwritten when the command is received from the app
-  // this modifies the return of
+  // this modifies the return of the functions below
   watch.getAmPmC(true); // 12 hour mode false->(am/pm), true->(AM/PM), if 24 hour mode returns empty string ("")
   watch.getHourC();     // (0-12), (0-23)
   watch.getHourZ();     // zero padded hour (00-12), (00-23)
@@ -313,7 +357,13 @@ void loop()
     Serial.print(w.icon);
     Serial.print("\t");
     Serial.print(w.temp);
-    Serial.println("C");
+    Serial.print("°C");
+    Serial.print("\tHigh: ");
+    Serial.print(w.high);
+    Serial.print("°C");
+    Serial.print("\tLow: ");
+    Serial.print(w.low);
+    Serial.println("°C");
   }
   */
 }

@@ -90,6 +90,14 @@ struct Alarm
 	bool enabled;
 };
 
+struct Setting
+{
+	uint8_t hour;
+	uint8_t minute;
+	uint8_t repeat;
+	bool enabled;
+};
+
 enum Config
 {
 	CF_TIME = 0, // time -
@@ -166,7 +174,7 @@ public:
 	void set24Hour(bool mode);
 	bool is24Hour();
 	String getAddress();
-	void setBattery(uint8_t level);
+	void setBattery(uint8_t level, bool charging = false);
 	bool isCameraReady();
 
 	// notifications
@@ -180,9 +188,16 @@ public:
 	String getWeatherTime();
 	Weather getWeatherAt(int index);
 
+	// settings
+	// isQuietActive
+	// isSleepActive
+
 	// alarms
 	Alarm getAlarm(int index);
 	void setAlarm(int index, Alarm alarm);
+	// alarm active callback
+	// isAlarmActive
+	// getActiveAlarms
 
 	// control
 	void sendCommand(uint8_t *command, size_t length);
@@ -208,6 +223,7 @@ private:
 	String watchName = "Chronos ESP32";
 	String address;
 	uint8_t batteryLevel;
+	bool isCharging;
 	bool connected;
 	bool batteryChanged;
 	bool hour24;

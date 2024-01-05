@@ -181,13 +181,16 @@ String ChronosESP32::getAddress()
 	@brief  set the battery level
 	@param	level
 			battery level
+	@param	charging
+			charging state
 */
-void ChronosESP32::setBattery(uint8_t level)
+void ChronosESP32::setBattery(uint8_t level, bool charging)
 {
-	if (batteryLevel != level)
+	if (batteryLevel != level || isCharging != charging)
 	{
 		batteryChanged = true;
 		batteryLevel = level;
+		isCharging = charging;
 	}
 }
 
@@ -470,7 +473,7 @@ void ChronosESP32::sendInfo()
 */
 void ChronosESP32::sendBattery()
 {
-	uint8_t batCmd[] = {0xAB, 0x00, 0x05, 0xFF, 0x91, 0x80, 0x00, batteryLevel};
+	uint8_t batCmd[] = {0xAB, 0x00, 0x05, 0xFF, 0x91, 0x80, isCharging ? 0x01 : 0x00, batteryLevel};
 	pCharacteristicTX->setValue(batCmd, 8);
 	pCharacteristicTX->notify();
 	vTaskDelay(200);
@@ -670,6 +673,7 @@ void ChronosESP32::dataReceived()
 		case 0x72:
 		{
 			int icon = incomingData.data[6];
+			int state = incomingData.data[7];
 
 			String message = "";
 			for (int i = 8; i < len; i++)
@@ -698,17 +702,19 @@ void ChronosESP32::dataReceived()
 				}
 				break;
 			}
-
-			notificationIndex++;
-			notifications[notificationIndex % NOTIF_SIZE].icon = icon;
-			notifications[notificationIndex % NOTIF_SIZE].app = appName(icon);
-			notifications[notificationIndex % NOTIF_SIZE].time = this->getTime("%H:%M");
-			notifications[notificationIndex % NOTIF_SIZE].message = message;
-			
-			if (notificationReceivedCallback != nullptr)
-			{
-				notificationReceivedCallback(notifications[notificationIndex % NOTIF_SIZE]);
+			if (state == 0x02){
+				notificationIndex++;
+				notifications[notificationIndex % NOTIF_SIZE].icon = icon;
+				notifications[notificationIndex % NOTIF_SIZE].app = appName(icon);
+				notifications[notificationIndex % NOTIF_SIZE].time = this->getTime("%H:%M");
+				notifications[notificationIndex % NOTIF_SIZE].message = message;
+				
+				if (notificationReceivedCallback != nullptr)
+				{
+					notificationReceivedCallback(notifications[notificationIndex % NOTIF_SIZE]);
+				}
 			}
+			
 		}
 		break;
 		case 0x73:

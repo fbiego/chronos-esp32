@@ -33,7 +33,7 @@ bool isConnected();
 void set24Hour(bool mode);
 bool is24Hour();
 String getAddress();
-void setBattery(uint8_t level);
+void setBattery(uint8_t level, bool charging = false);
 bool isCameraReady();
 
 // notifications

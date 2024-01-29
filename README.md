@@ -8,16 +8,17 @@ Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 
 ## Features
 
-- Time
-- Notifications
-- Weather
-- Controls (Music, Find Phone, Camera)
-- Alarms (only received & stored)
+- [x] Time
+- [x] Notifications
+- [x] Weather
+- [x] Controls (Music, Find Phone, Camera)
+- [ ] Alarms
 
 ## App
 
 <a href='https://fbiego.com/chronos/app?id=esp32'><img alt='Download Chronos' height="100px" src='https://fbiego.com/chronos/img/chronos.png'/></a>
-> Chronos
+
+- [`Chronos`](https://fbiego.com/chronos/app?id=esp32)
 
 ## Functions
 

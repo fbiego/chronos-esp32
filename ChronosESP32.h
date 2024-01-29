@@ -188,13 +188,14 @@ public:
 	String getWeatherTime();
 	Weather getWeatherAt(int index);
 
-	// settings
+	// TODO (settings)
 	// isQuietActive
 	// isSleepActive
 
 	// alarms
 	Alarm getAlarm(int index);
 	void setAlarm(int index, Alarm alarm);
+	// TODO (alarms)
 	// alarm active callback
 	// isAlarmActive
 	// getActiveAlarms

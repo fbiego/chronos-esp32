@@ -84,7 +84,7 @@ void loop()
         watch.musicControl(MUSIC_TOGGLE); // MUSIC_PLAY, MUSIC_PAUSE, MUSIC_PREVIOUS, MUSIC_NEXT, MUSIC_TOGGLE, VOLUME_UP, VOLUME_DOWN, VOLUME_MUTE
         Serial.println("Sent music command");
 
-        // watch.setVolume(50); // set the music volume [0-100] (expreimental)
+        // watch.setVolume(50); // set the music volume [0-100] (experimental)
 
         // find phone
         // watch.findPhone(true); // true -> ring the phone, false -> stop the ringing, the ringing will also be stopped automatically after 10 seconds;

@@ -283,12 +283,13 @@ void setup()
   Serial.println(watch.getAddress()); // mac address, call after begin()
 
   watch.setBattery(80); // set the battery level, will be synced to the app
+  
 
-  // watch.clearNotifications();
+  // watch.clearNotifications(); // clear the default notification (Chronos)
 
   watch.set24Hour(true); // the 24 hour mode will be overwritten when the command is received from the app
   // this modifies the return of the functions below
-  watch.getAmPmC(true); // 12 hour mode false->(am/pm), true->(AM/PM), if 24 hour mode returns empty string ("")
+  watch.getAmPmC(true); // 12 hour mode true->(am/pm), false->(AM/PM), if 24 hour mode returns empty string ("")
   watch.getHourC();     // (0-12), (0-23)
   watch.getHourZ();     // zero padded hour (00-12), (00-23)
   watch.is24Hour();     // resturns whether in 24 hour mode
@@ -297,6 +298,8 @@ void setup()
 void loop()
 {
   watch.loop(); // handles internal routine functions
+
+  // watch.setBattery(85, true); // set the battery level and charging state
 
   String time = watch.getHourC() + watch.getTime(":%M ") + watch.getAmPmC();
   Serial.println(time);
@@ -325,7 +328,7 @@ void loop()
 
   /*
   // read the alarms, 8 available
-  // the alarms are only stored as received from the app
+  // the alarms are only stored as received from the app, there is no function to trigger it yet
   for (int j = 0; j < 8; j++){
     Alarm a = watch.getAlarm(j);
     Serial.print("Alarm: ");
@@ -349,7 +352,7 @@ void loop()
 
   for (int i = 0; i < n; i++)
   {
-    // iterate through available notifications, index 0 is the latest received notification
+    // iterate through weather forecast, index 0 is today, 1 tomorrow...etc
     Weather w = watch.getWeatherAt(i);
     Serial.print("Day:"); // day of the week (0 - 6)
     Serial.print(w.day);

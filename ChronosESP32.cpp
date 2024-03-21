@@ -33,12 +33,8 @@
 #include <Arduino.h>
 #include "ChronosESP32.h"
 
-#define SERVICE_UUID "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-#define CHARACTERISTIC_UUID_RX "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-#define CHARACTERISTIC_UUID_TX "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
-
-static BLECharacteristic *pCharacteristicTX;
-static BLECharacteristic *pCharacteristicRX;
+BLECharacteristic *ChronosESP32::pCharacteristicTX;
+BLECharacteristic *ChronosESP32::pCharacteristicRX;
 
 /*!
 	@brief  Constructor for ChronosESP32
@@ -91,8 +87,8 @@ void ChronosESP32::begin()
 	notifications[0].app = "Chronos";
 	notifications[0].message = "Download from Google Play to sync time and receive notifications";
 
-	findTimer.duration = 10000;	  // 10 seconds for find phone
-	ringerTimer.duration = 30000; // 30 seconds for ringer alert
+	findTimer.duration = 30 * 1000;	  // 30 seconds for find phone
+	ringerTimer.duration = 30 * 1000; // 30 seconds for ringer alert
 }
 
 /*!
@@ -111,6 +107,7 @@ void ChronosESP32::loop()
 
 				sendInfo();
 				sendBattery();
+				setNotifyBattery(notifyPhone);
 			}
 		}
 		if (findTimer.active)
@@ -316,9 +313,7 @@ void ChronosESP32::sendCommand(uint8_t *command, size_t length)
 void ChronosESP32::musicControl(uint16_t command)
 {
 	uint8_t musicCmd[] = {0xAB, 0x00, 0x04, 0xFF, (uint8_t)(command >> 8), 0x80, (uint8_t)(command)};
-	pCharacteristicTX->setValue(musicCmd, 7);
-	pCharacteristicTX->notify();
-	vTaskDelay(200);
+	sendCommand(musicCmd, 7);
 }
 
 /*!
@@ -329,9 +324,7 @@ void ChronosESP32::musicControl(uint16_t command)
 void ChronosESP32::setVolume(uint8_t level)
 {
 	uint8_t volumeCmd[] = {0xAB, 0x00, 0x05, 0xFF, 0x99, 0x80, 0xA0, level};
-	pCharacteristicTX->setValue(volumeCmd, 8);
-	pCharacteristicTX->notify();
-	vTaskDelay(200);
+	sendCommand(volumeCmd, 8);
 }
 
 /*!
@@ -342,9 +335,7 @@ bool ChronosESP32::capturePhoto()
 	if (cameraReady)
 	{
 		uint8_t captureCmd[] = {0xAB, 0x00, 0x04, 0xFF, 0x79, 0x80, 0x01};
-		pCharacteristicTX->setValue(captureCmd, 7);
-		pCharacteristicTX->notify();
-		vTaskDelay(200);
+		sendCommand(captureCmd, 7);
 	}
 	return cameraReady;
 }
@@ -363,9 +354,7 @@ void ChronosESP32::findPhone(bool state)
 	}
 	uint8_t c = state ? 0x01 : 0x00;
 	uint8_t findCmd[] = {0xAB, 0x00, 0x04, 0xFF, 0x7D, 0x80, c};
-	pCharacteristicTX->setValue(findCmd, 7);
-	pCharacteristicTX->notify();
-	vTaskDelay(200);
+	sendCommand(findCmd, 7);
 }
 
 /*!
@@ -404,7 +393,7 @@ String ChronosESP32::getAmPmC(bool caps)
 	}
 	else
 	{
-		return this->getAmPm(caps);
+		return this->getAmPm(!caps); // esp32time is getAmPm(bool lowercase);
 	}
 	return "";
 }
@@ -463,9 +452,7 @@ void ChronosESP32::setRawDataCallback(void (*callback)(uint8_t *, int))
 void ChronosESP32::sendInfo()
 {
 	uint8_t infoCmd[] = {0xab, 0x00, 0x11, 0xff, 0x92, 0xc0, 0x01, 0x00, 0x00, 0xfb, 0x1e, 0x40, 0xc0, 0x0e, 0x32, 0x28, 0x00, 0xe2, screenConf, 0x80};
-	pCharacteristicTX->setValue(infoCmd, 20);
-	pCharacteristicTX->notify();
-	vTaskDelay(200);
+	sendCommand(infoCmd, 20);
 }
 
 /*!
@@ -473,10 +460,52 @@ void ChronosESP32::sendInfo()
 */
 void ChronosESP32::sendBattery()
 {
-	uint8_t batCmd[] = {0xAB, 0x00, 0x05, 0xFF, 0x91, 0x80, isCharging ? 0x01 : 0x00, batteryLevel};
-	pCharacteristicTX->setValue(batCmd, 8);
-	pCharacteristicTX->notify();
-	vTaskDelay(200);
+	uint8_t c = isCharging ? 0x01 : 0x00;
+	uint8_t batCmd[] = {0xAB, 0x00, 0x05, 0xFF, 0x91, 0x80, c, batteryLevel};
+	sendCommand(batCmd, 8);
+}
+
+/*!
+	@brief  request the battery level of the phone
+*/
+void ChronosESP32::setNotifyBattery(bool state)
+{
+	notifyPhone = state;
+	uint8_t s = state ? 0x01 : 0x00;
+	uint8_t batRq[] = {0xAB, 0x00, 0x04, 0xFE, 0x91, 0x80, s}; // custom command AB..FE
+	sendCommand(batRq, 7);
+}
+
+/*!
+	@brief  charging status of the phone
+*/
+bool ChronosESP32::isPhoneCharging()
+{
+	return phoneCharging;
+}
+
+/*!
+	@brief  battery level of the phone
+*/
+uint8_t ChronosESP32::getPhoneBattery()
+{
+	return phoneBatteryLevel;
+}
+
+/*!
+	@brief  app version code
+*/
+int ChronosESP32::getAppCode()
+{
+	return appCode;
+}
+/*!
+	@brief  app version name
+*/
+
+String ChronosESP32::getAppVersion()
+{
+	return appVersion;
 }
 
 /*!
@@ -529,7 +558,7 @@ String ChronosESP32::appName(int id)
 	case 0x22:
 		return "WearFit Pro";
 	case 0xC0:
-		return "ChronosESP32";
+		return "Chronos";
 	default:
 		return "Message";
 	}
@@ -583,7 +612,7 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 			rawDataReceivedCallback((uint8_t *)pData.data(), len);
 		}
 
-		if ((pData[0] == 0xAB || pData[0] == 0xEA) && pData[3] == 0xFF)
+		if ((pData[0] == 0xAB || pData[0] == 0xEA) && (pData[3] == 0xFE || pData[3] == 0xFF))
 		{
 			// start of data, assign length from packet
 			incomingData.length = pData[1] * 256 + pData[2] + 3;
@@ -702,19 +731,19 @@ void ChronosESP32::dataReceived()
 				}
 				break;
 			}
-			if (state == 0x02){
+			if (state == 0x02)
+			{
 				notificationIndex++;
 				notifications[notificationIndex % NOTIF_SIZE].icon = icon;
 				notifications[notificationIndex % NOTIF_SIZE].app = appName(icon);
 				notifications[notificationIndex % NOTIF_SIZE].time = this->getTime("%H:%M");
 				notifications[notificationIndex % NOTIF_SIZE].message = message;
-				
+
 				if (notificationReceivedCallback != nullptr)
 				{
 					notificationReceivedCallback(notifications[notificationIndex % NOTIF_SIZE]);
 				}
 			}
-			
 		}
 		break;
 		case 0x73:
@@ -869,6 +898,19 @@ void ChronosESP32::dataReceived()
 				configurationReceivedCallback(CF_SLEEP, enabled, slp);
 			}
 			break;
+		case 0x91:
+
+			if (incomingData.data[3] == 0xFE)
+			{
+				phoneCharging = incomingData.data[6] == 1;
+				phoneBatteryLevel = incomingData.data[7];
+				if (configurationReceivedCallback != nullptr)
+				{
+					configurationReceivedCallback(CF_PBAT, incomingData.data[6], phoneBatteryLevel);
+				}
+			}
+
+			break;
 		case 0x93:
 			this->setTime(incomingData.data[13], incomingData.data[12], incomingData.data[11], incomingData.data[10], incomingData.data[9], incomingData.data[7] * 256 + incomingData.data[8]);
 
@@ -883,6 +925,21 @@ void ChronosESP32::dataReceived()
 				uint32_t color = ((uint32_t)incomingData.data[5] << 16) | ((uint32_t)incomingData.data[6] << 8) | (uint32_t)incomingData.data[7];
 				uint32_t select = ((uint32_t)(incomingData.data[8]) << 16) | (uint32_t)incomingData.data[9];
 				configurationReceivedCallback(CF_FONT, color, select);
+			}
+			break;
+		case 0xCA:
+			if (incomingData.data[3] == 0xFE)
+			{
+				appCode = (incomingData.data[6] * 256) + incomingData.data[7];
+				appVersion = "";
+				for (int i = 8; i < len; i++)
+				{
+					appVersion += (char)incomingData.data[i];
+				}
+				if (configurationReceivedCallback != nullptr)
+				{
+					configurationReceivedCallback(CF_APP, appCode, 0);
+				}
 			}
 			break;
 		}

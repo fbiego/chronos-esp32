@@ -59,6 +59,15 @@ void setVolume(uint8_t level);
 bool capturePhoto();
 void findPhone(bool state);
 
+// phone battery
+void setNotifyPhoneBattery(bool state); 
+bool isPhoneCharging();
+uint8_t getPhoneBatteryLevel();
+
+// app info
+int getAppCode();
+String getAppVersion();
+
 // helper functions for ESP32Time
 int getHourC(); // return hour based on hour 24 variable
 String getHourZ(); // return zero padded hour string based on hour 24 variable

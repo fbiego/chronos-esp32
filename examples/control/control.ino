@@ -87,6 +87,6 @@ void loop()
         // watch.setVolume(50); // set the music volume [0-100] (experimental)
 
         // find phone
-        // watch.findPhone(true); // true -> ring the phone, false -> stop the ringing, the ringing will also be stopped automatically after 10 seconds;
+        // watch.findPhone(true); // true -> ring the phone, false -> stop the ringing, the ringing will also be stopped automatically after 30 seconds;
     }
 }

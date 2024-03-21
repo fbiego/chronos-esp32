@@ -48,9 +48,13 @@
 #define MUSIC_NEXT 0x9D03
 #define MUSIC_TOGGLE 0x9900
 
-#define VOLUME_UP	0x99A1
-#define VOLUME_DOWN	0x99A2
-#define VOLUME_MUTE	0x99A3
+#define VOLUME_UP 0x99A1
+#define VOLUME_DOWN 0x99A2
+#define VOLUME_MUTE 0x99A3
+
+#define SERVICE_UUID "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+#define CHARACTERISTIC_UUID_RX "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+#define CHARACTERISTIC_UUID_TX "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 struct Notification
 {
@@ -116,58 +120,59 @@ enum Config
 	CF_QUIET,	 // quiet hours (hour)(minute)(hour)(minute)(enabled) -
 	CF_WATER,	 // water reminder (hour)(minute)(hour)(minute)(interval)(enabled)-
 	CF_WEATHER,	 // weather config (a Weekly) (b City Name) -
-	CF_CAMERA	 // camera config, (ready state)
+	CF_CAMERA,	 // camera config, (ready state)
+	CF_PBAT,	 // phone battery ([a] isPhoneCharing, [b] phoneBatteryLevel)
+	CF_APP		 // app version info
 };
 
 /*
-The screen configurations below is only used for identification on the Chronos app. 
+The screen configurations below is only used for identification on the Chronos app.
 Under the watch tab, when you click on watch info you can see the detected screen configuration.
-The primary purpose of this configuration is to aid in loading watchfaces on supported watches with the correct resolution. 
+The primary purpose of this configuration is to aid in loading watchfaces on supported watches with the correct resolution.
 ChronosESP32 library is implementing this for future development
 */
 enum ChronosScreen
 {
-    // Resolution(240x240), Size in inches(1.3), Type(0 - Round [C], 1 - Square [S], 2 - Rectangular [R])
-    CS_0x0_000_CFF = 0, // default no config
-    CS_240x240_130_STF = 1,  // 240x240, 1.3 inches, Square, True, False
-    CS_240x240_130_STT = 2,  // 240x240, 1.3 inches, Square, True, True
-    CS_80x160_096_RTF = 3,   // 80x160, 0.96 inches, Rectangular, True, False
-    CS_80x160_096_RTT = 4,   // 80x160, 0.96 inches, Rectangular, True, True
-    CS_135x240_114_RTF = 5,  // 135x240, 1.14 inches, Rectangular, True, False
-    CS_135x240_114_RTT = 6,  // 135x240, 1.14 inches, Rectangular, True, True
-    CS_240x240_128_CTF = 7,  // 240x240, 1.28 inches, Round, True, False
-    CS_240x240_128_CTT = 8,  // 240x240, 1.28 inches, Round, True, True
-    CS_240x288_157_RTF = 9,  // 240x288, 1.57 inches, Rectangular, True, False
-    CS_240x288_157_RTT = 10, // 240x288, 1.57 inches, Rectangular, True, True
-    CS_240x283_172_RTF = 11, // 240x283, 1.72 inches, Rectangular, True, False
-    CS_240x283_172_RTT = 12, // 240x283, 1.72 inches, Rectangular, True, True
-    CS_360x360_130_CTF = 13, // 360x360, 1.3 inches, Round, True, False
-    CS_360x360_130_CTT = 14, // 360x360, 1.3 inches, Round, True, True
-    CS_320x380_177_RTF = 15, // 320x380, 1.77 inches, Rectangular, True, False
-    CS_320x380_177_RTT = 16, // 320x380, 1.77 inches, Rectangular, True, True
-    CS_320x385_175_RTF = 17, // 320x385, 1.75 inches, Rectangular, True, False
-    CS_320x385_175_RTT = 18, // 320x385, 1.75 inches, Rectangular, True, True
-    CS_320x360_160_RTF = 19, // 320x360, 1.6 inches, Rectangular, True, False
-    CS_320x360_160_RTT = 20, // 320x360, 1.6 inches, Rectangular, True, True
-    CS_240x296_191_RTF = 21, // 240x296, 1.91 inches, Rectangular, True, False
-    CS_240x296_191_RTT = 22, // 240x296, 1.91 inches, Rectangular, True, True
-    CS_412x412_145_CTF = 23, // 412x412, 1.45 inches, Round, True, False
-    CS_412x412_145_CTT = 24, // 412x412, 1.45 inches, Round, True, True
-    CS_410x494_200_RTF = 25, // 410x494, 2.0 inches, Rectangular, True, False
-    CS_410x494_200_RTT = 32, // 410x494, 2.0 inches, Rectangular, True, True
-    CS_466x466_143_CTF = 33, // 466x466, 1.43 inches, Round, True, False
-    CS_466x466_143_CTT = 34  // 466x466, 1.43 inches, Round, True, True
+	// Resolution(240x240), Size in inches(1.3), Type(0 - Round [C], 1 - Square [S], 2 - Rectangular [R])
+	CS_0x0_000_CFF = 0,		 // default no config
+	CS_240x240_130_STF = 1,	 // 240x240, 1.3 inches, Square, True, False
+	CS_240x240_130_STT = 2,	 // 240x240, 1.3 inches, Square, True, True
+	CS_80x160_096_RTF = 3,	 // 80x160, 0.96 inches, Rectangular, True, False
+	CS_80x160_096_RTT = 4,	 // 80x160, 0.96 inches, Rectangular, True, True
+	CS_135x240_114_RTF = 5,	 // 135x240, 1.14 inches, Rectangular, True, False
+	CS_135x240_114_RTT = 6,	 // 135x240, 1.14 inches, Rectangular, True, True
+	CS_240x240_128_CTF = 7,	 // 240x240, 1.28 inches, Round, True, False
+	CS_240x240_128_CTT = 8,	 // 240x240, 1.28 inches, Round, True, True
+	CS_240x288_157_RTF = 9,	 // 240x288, 1.57 inches, Rectangular, True, False
+	CS_240x288_157_RTT = 10, // 240x288, 1.57 inches, Rectangular, True, True
+	CS_240x283_172_RTF = 11, // 240x283, 1.72 inches, Rectangular, True, False
+	CS_240x283_172_RTT = 12, // 240x283, 1.72 inches, Rectangular, True, True
+	CS_360x360_130_CTF = 13, // 360x360, 1.3 inches, Round, True, False
+	CS_360x360_130_CTT = 14, // 360x360, 1.3 inches, Round, True, True
+	CS_320x380_177_RTF = 15, // 320x380, 1.77 inches, Rectangular, True, False
+	CS_320x380_177_RTT = 16, // 320x380, 1.77 inches, Rectangular, True, True
+	CS_320x385_175_RTF = 17, // 320x385, 1.75 inches, Rectangular, True, False
+	CS_320x385_175_RTT = 18, // 320x385, 1.75 inches, Rectangular, True, True
+	CS_320x360_160_RTF = 19, // 320x360, 1.6 inches, Rectangular, True, False
+	CS_320x360_160_RTT = 20, // 320x360, 1.6 inches, Rectangular, True, True
+	CS_240x296_191_RTF = 21, // 240x296, 1.91 inches, Rectangular, True, False
+	CS_240x296_191_RTT = 22, // 240x296, 1.91 inches, Rectangular, True, True
+	CS_412x412_145_CTF = 23, // 412x412, 1.45 inches, Round, True, False
+	CS_412x412_145_CTT = 24, // 412x412, 1.45 inches, Round, True, True
+	CS_410x494_200_RTF = 25, // 410x494, 2.0 inches, Rectangular, True, False
+	CS_410x494_200_RTT = 32, // 410x494, 2.0 inches, Rectangular, True, True
+	CS_466x466_143_CTF = 33, // 466x466, 1.43 inches, Round, True, False
+	CS_466x466_143_CTT = 34	 // 466x466, 1.43 inches, Round, True, True
 };
-
 
 class ChronosESP32 : public BLEServerCallbacks, public BLECharacteristicCallbacks, public ESP32Time
 {
 
 public:
 	ChronosESP32();
-	ChronosESP32(String name, ChronosScreen screen = CS_240x240_128_CTF);		 // set the BLE name
-	void begin();				 // initializes BLE
-	void loop();				 // handles routine functions
+	ChronosESP32(String name, ChronosScreen screen = CS_240x240_128_CTF); // set the BLE name
+	void begin();														  // initializes BLE
+	void loop();														  // handles routine functions
 
 	// watch
 	bool isConnected();
@@ -207,6 +212,15 @@ public:
 	bool capturePhoto();
 	void findPhone(bool state);
 
+	// phone battery status
+	void setNotifyBattery(bool state);
+	bool isPhoneCharging();
+	uint8_t getPhoneBattery();
+
+	// app info
+	int getAppCode();
+	String getAppVersion();
+
 	// helper functions for ESP32Time
 	int getHourC();					   // return hour based on hour 24 variable
 	String getHourZ();				   // return zero padded hour string based on hour 24 variable
@@ -230,6 +244,10 @@ private:
 	bool hour24;
 	bool cameraReady;
 
+	uint8_t phoneBatteryLevel = 0;
+	bool phoneCharging;
+	bool notifyPhone = true;
+
 	Notification notifications[NOTIF_SIZE];
 	int notificationIndex;
 
@@ -237,6 +255,9 @@ private:
 	String weatherCity;
 	String weatherTime;
 	int weatherSize;
+
+	int appCode;
+	String appVersion;
 
 	Alarm alarms[ALARM_SIZE];
 
@@ -268,6 +289,9 @@ private:
 	virtual void onWrite(BLECharacteristic *pCharacteristic);
 
 	void dataReceived();
+
+	static BLECharacteristic *pCharacteristicTX;
+	static BLECharacteristic *pCharacteristicRX;
 	
 };
 

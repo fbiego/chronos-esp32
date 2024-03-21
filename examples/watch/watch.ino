@@ -209,6 +209,21 @@ void configCallback(Config config, uint32_t a, uint32_t b)
     Serial.print("Language: ");
     Serial.println(b);
     break;
+  case CF_PBAT:
+    // state is saved internally
+    Serial.print("Phone battery: ");
+    Serial.println(a == 1 ? "Charging" : "Not Charing"); // bool state = watch.isPhoneCharging();
+    Serial.print("Level: ");
+    Serial.print(b); // uint8_t level = watch.getPhoneBattery();
+    Serial.println("%");
+    break;
+  case CF_APP:
+    // state is saved internally
+    Serial.print("Chronos App; Code: ");
+    Serial.print(a); // int code = watch.getAppCode();
+    Serial.print(" Version: ");
+    Serial.println(watch.getAppVersion());
+    break;
   case CF_WEATHER:
     // weather is saved
     Serial.println("Weather received");
@@ -226,7 +241,7 @@ void configCallback(Config config, uint32_t a, uint32_t b)
 
         for (int i = 0; i < n; i++)
         {
-          // iterate through available notifications, index 0 is the latest received notification
+          // iterate through weather forecast, index 0 is today, 1 tomorrow...etc
           Weather w = watch.getWeatherAt(i);
           Serial.print("Day:"); // day of the week (0 - 6)
           Serial.print(w.day);
@@ -278,14 +293,13 @@ void setup()
 
   watch.begin(); // initializes the BLE
   // go to Chronos app > Watches tab > Watches button > Pair New Devices > Search > Select your board
-  // you only need to do it once. To disconnect, click on the rotating icon
+  // you only need to do it once. To disconnect, click on the rotating icon (Top Right)
 
   Serial.println(watch.getAddress()); // mac address, call after begin()
 
   watch.setBattery(80); // set the battery level, will be synced to the app
-  
 
-  // watch.clearNotifications(); // clear the default notification (Chronos)
+  // watch.clearNotifications(); // clear the default notification (Chronos app install text)
 
   watch.set24Hour(true); // the 24 hour mode will be overwritten when the command is received from the app
   // this modifies the return of the functions below
@@ -293,6 +307,7 @@ void setup()
   watch.getHourC();     // (0-12), (0-23)
   watch.getHourZ();     // zero padded hour (00-12), (00-23)
   watch.is24Hour();     // resturns whether in 24 hour mode
+  // watch.setNotifyBattery(false); // whether to enable or disable receiving phone battery status (enabled by default)
 }
 
 void loop()

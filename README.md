@@ -16,9 +16,9 @@ Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 
 ## Companion App
 
-<a href='https://fbiego.com/chronos/app?id=esp32'><img alt='Download Chronos' height="100px" src='https://fbiego.com/chronos/img/chronos.png'/></a>
+<a href='https://chronos.ke/app?id=esp32'><img alt='Download Chronos' height="100px" src='https://chronos.ke/img/chronos.png'/></a>
 
-[`Chronos`](https://fbiego.com/chronos/app?id=esp32)
+[`Chronos`](https://chronos.ke/app?id=esp32)
 
 ## Functions
 
@@ -60,9 +60,9 @@ bool capturePhoto();
 void findPhone(bool state);
 
 // phone battery
-void setNotifyPhoneBattery(bool state); 
+void setNotifyBattery(bool state);
 bool isPhoneCharging();
-uint8_t getPhoneBatteryLevel();
+uint8_t getPhoneBattery();
 
 // app info
 int getAppCode();

@@ -37,10 +37,16 @@
 #include <NimBLEDevice.h>
 #include <ESP32Time.h>
 
+#define LIB_VER_MAJOR 1
+#define LIB_VER_MINOR 4
+#define LIB_VER_PATCH 0
+
 #define NOTIF_SIZE 10
 #define WEATHER_SIZE 7
 #define ALARM_SIZE 8
 #define DATA_SIZE 512
+#define FORECAST_SIZE 24
+#define QR_SIZE 9
 
 #define MUSIC_PLAY 0x9D00
 #define MUSIC_PAUSE 0x9D01
@@ -73,6 +79,16 @@ struct Weather
 	int low;
 };
 
+struct HourlyForecast{
+	int day; // day of forecast
+	int hour; // hour of the forecast
+	int icon;
+	int temp; // 
+	int uv; // uv index
+	int humidity; // %
+	int wind; //wind speed km/h
+};
+
 struct ChronosTimer
 {
 	unsigned long time;
@@ -102,27 +118,35 @@ struct Setting
 	bool enabled;
 };
 
+struct RemoteTouch
+{
+	bool state;
+	uint32_t x;
+	uint32_t y;
+};
+
 enum Config
 {
 	CF_TIME = 0, // time -
-	CF_RTW,		 // raise to wake  -
-	CF_HR24,	 // 24 hour mode -
-	CF_LANG,	 // watch language -
-	CF_RST,		 // watch reset -
-	CF_CLR,		 // watch clear data
-	CF_HOURLY,	 // hour measurement -
-	CF_FIND,	 // find watch -
-	CF_USER,	 // user details (age)(height)(weight)(step length)(target)(units[])
-	CF_ALARM,	 // alarm (index)(hour) (minute) (enabled) (repeat) -
-	CF_FONT,	 // font settings (color[3])(b1+b2) -
-	CF_SED,		 // sedentary (hour)(minute)(hour)(minute)(interval)(enabled) -
-	CF_SLEEP,	 // sleep time (hour)(minute)(hour)(minute)(enabled) -
-	CF_QUIET,	 // quiet hours (hour)(minute)(hour)(minute)(enabled) -
-	CF_WATER,	 // water reminder (hour)(minute)(hour)(minute)(interval)(enabled)-
-	CF_WEATHER,	 // weather config (a Weekly) (b City Name) -
-	CF_CAMERA,	 // camera config, (ready state)
-	CF_PBAT,	 // phone battery ([a] isPhoneCharing, [b] phoneBatteryLevel)
-	CF_APP		 // app version info
+	CF_RTW,		// raise to wake  -
+	CF_HR24,	// 24 hour mode -
+	CF_LANG,	// watch language -
+	CF_RST,		// watch reset -
+	CF_CLR,		// watch clear data
+	CF_HOURLY,	// hour measurement -
+	CF_FIND,	// find watch -
+	CF_USER,	// user details (age)(height)(weight)(step length)(target)(units[])
+	CF_ALARM,	// alarm (index)(hour) (minute) (enabled) (repeat) -
+	CF_FONT,	// font settings (color[3])(b1+b2) -
+	CF_SED,		// sedentary (hour)(minute)(hour)(minute)(interval)(enabled) -
+	CF_SLEEP,	// sleep time (hour)(minute)(hour)(minute)(enabled) -
+	CF_QUIET,	// quiet hours (hour)(minute)(hour)(minute)(enabled) -
+	CF_WATER,	// water reminder (hour)(minute)(hour)(minute)(interval)(enabled)-
+	CF_WEATHER,	// weather config (a Weekly) (b City Name) -
+	CF_CAMERA,	// camera config, (ready state)
+	CF_PBAT,	// phone battery ([a] isPhoneCharing, [b] phoneBatteryLevel)
+	CF_APP,		// app version info
+	CF_QR,		// qr codes received
 };
 
 /*
@@ -193,6 +217,12 @@ public:
 	String getWeatherTime();
 	Weather getWeatherAt(int index);
 
+	HourlyForecast getForecastHour(int hour);
+
+	RemoteTouch getTouch();
+
+	String getQrAt(int index);
+
 	// TODO (settings)
 	// isQuietActive
 	// isSleepActive
@@ -256,10 +286,16 @@ private:
 	String weatherTime;
 	int weatherSize;
 
+	HourlyForecast hourlyForecast[FORECAST_SIZE];
+
+	RemoteTouch touch;
+
 	int appCode;
 	String appVersion;
 
 	Alarm alarms[ALARM_SIZE];
+
+	String qrLinks[QR_SIZE];
 
 	ChronosTimer infoTimer;
 	ChronosTimer findTimer;

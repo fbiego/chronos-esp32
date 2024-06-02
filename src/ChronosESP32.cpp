@@ -43,6 +43,8 @@ ChronosESP32::ChronosESP32()
 {
 	connected = false;
 	cameraReady = false;
+	batteryChanged = true;
+	qrLinks[0] = "https://chronos.ke/";
 }
 
 /*!
@@ -64,6 +66,7 @@ void ChronosESP32::begin()
 {
 	BLEDevice::init(watchName.c_str());
 	BLEServer *pServer = BLEDevice::createServer();
+	BLEDevice::setMTU(517);
 	pServer->setCallbacks(this);
 
 	BLEService *pService = pServer->createService(SERVICE_UUID);
@@ -270,6 +273,16 @@ Weather ChronosESP32::getWeatherAt(int index)
 }
 
 /*!
+	@brief  return the weatherforecast for the hour
+	@param  hour
+			position of the weather to be returned
+*/
+HourlyForecast ChronosESP32::getForecastHour(int hour)
+{
+	return hourlyForecast[hour % FORECAST_SIZE];
+}
+
+/*!
 	@brief  get the alarm at the index
 	@param	index
 			position of the alarm to be returned
@@ -398,6 +411,25 @@ String ChronosESP32::getAmPmC(bool caps)
 	return "";
 }
 
+
+/*!
+	@brief  get remote touch data
+*/
+RemoteTouch ChronosESP32::getTouch()
+{
+	return touch;
+}
+
+/*!
+	@brief  get the qr link at the index
+	@param	index
+			position of the qr link to be returned
+*/
+String ChronosESP32::getQrAt(int index)
+{
+	return qrLinks[index % QR_SIZE];
+}
+
 /*!
 	@brief  set the connection callback
 */
@@ -451,7 +483,7 @@ void ChronosESP32::setRawDataCallback(void (*callback)(uint8_t *, int))
 */
 void ChronosESP32::sendInfo()
 {
-	uint8_t infoCmd[] = {0xab, 0x00, 0x11, 0xff, 0x92, 0xc0, 0x01, 0x00, 0x00, 0xfb, 0x1e, 0x40, 0xc0, 0x0e, 0x32, 0x28, 0x00, 0xe2, screenConf, 0x80};
+	uint8_t infoCmd[] = {0xab, 0x00, 0x11, 0xff, 0x92, 0xc0, LIB_VER_MAJOR, (LIB_VER_MINOR * 10 + LIB_VER_PATCH), 0x00, 0xfb, 0x1e, 0x40, 0xc0, 0x0e, 0x32, 0x28, 0x00, 0xe2, screenConf, 0x80};
 	sendCommand(infoCmd, 20);
 }
 
@@ -590,6 +622,7 @@ void ChronosESP32::onDisconnect(BLEServer *pServer)
 	connected = false;
 	cameraReady = false;
 	BLEDevice::startAdvertising();
+	touch.state = false; // release touch
 	if (connectionChangeCallback != nullptr)
 	{
 		connectionChangeCallback(false);
@@ -927,6 +960,40 @@ void ChronosESP32::dataReceived()
 				configurationReceivedCallback(CF_FONT, color, select);
 			}
 			break;
+		case 0xA8:
+			if (incomingData.data[3] == 0xFE)
+			{
+				// end of qr data
+				int size = incomingData.data[5]; // number of links received
+				if (configurationReceivedCallback != nullptr)
+				{
+					configurationReceivedCallback(CF_QR, 1, size);
+				}
+			}
+			if (incomingData.data[3] == 0xFF)
+			{
+				// receiving qr data
+				int index = incomingData.data[5]; // index of the curent link
+				qrLinks[index] = ""; // clear existing
+				for (int i = 6; i < len; i++)
+				{
+					qrLinks[index] += (char)incomingData.data[i];
+				}
+				if (configurationReceivedCallback != nullptr)
+				{
+					configurationReceivedCallback(CF_QR, 0, index);
+				}
+				
+			}
+			break;
+		case 0xBF:
+			if (incomingData.data[3] == 0xFE)
+			{
+				touch.state = incomingData.data[5] == 1;
+				touch.x = uint32_t(incomingData.data[6] << 8) | uint32_t(incomingData.data[7]);
+				touch.y = uint32_t(incomingData.data[8] << 8) | uint32_t(incomingData.data[9]);
+			}
+			break;
 		case 0xCA:
 			if (incomingData.data[3] == 0xFE)
 			{
@@ -942,22 +1009,66 @@ void ChronosESP32::dataReceived()
 				}
 			}
 			break;
+		case 0xEE:
+			if (incomingData.data[3] == 0xFE)
+			{
+				//nvIc
+			}
+			break;
+		case 0xEF:
+			if (incomingData.data[3] == 0xFE)
+			{
+				//nvData
+			}
+			break;
 		}
 	}
 	else if (incomingData.data[0] == 0xEA)
 	{
-		if (incomingData.data[4] == 0x7E && incomingData.data[5] == 0x01)
+		if (incomingData.data[4] == 0x7E)
 		{
-			String city = "";
-			for (int c = 7; c < len; c++)
+			switch (incomingData.data[5])
 			{
-				city += (char)incomingData.data[c];
+			case 0x01:
+			{
+				String city = "";
+				for (int c = 7; c < len; c++)
+				{
+					city += (char)incomingData.data[c];
+				}
+				weatherCity = city;
+				if (configurationReceivedCallback != nullptr)
+				{
+					configurationReceivedCallback(CF_WEATHER, 0, 1);
+				}
 			}
-			weatherCity = city;
-			if (configurationReceivedCallback != nullptr)
+			break;
+			case 0x02:
 			{
-				configurationReceivedCallback(CF_WEATHER, 0, 1);
+				int size = incomingData.data[6];
+				int hour = incomingData.data[7];
+				for (int z = 0; z < size; z++)
+				{
+					if (hour + z >= FORECAST_SIZE)
+					{
+						break;
+					}
+					int icon = incomingData.data[8 + (6 * z)] >> 4;
+					int sign = (incomingData.data[8 + (6 * z)] & 1) ? -1 : 1;
+					int temp = ((int)incomingData.data[9 + (6 * z)]) * sign;
+
+					hourlyForecast[hour + z].day = this->getDayofYear();
+					hourlyForecast[hour + z].hour = hour + z;
+					hourlyForecast[hour + z].wind = (incomingData.data[10 + (6 * z)] * 256) + incomingData.data[11 + (6 * z)];
+					hourlyForecast[hour + z].humidity = incomingData.data[12 + (6 * z)];
+					hourlyForecast[hour + z].uv = incomingData.data[13 + (6 * z)];
+					hourlyForecast[hour + z].icon = icon;
+					hourlyForecast[hour + z].temp = temp;
+				}
+			}
+			break;
 			}
 		}
 	}
 }
+

@@ -212,7 +212,7 @@ void configCallback(Config config, uint32_t a, uint32_t b)
   case CF_PBAT:
     // state is saved internally
     Serial.print("Phone battery: ");
-    Serial.println(a == 1 ? "Charging" : "Not Charing"); // bool state = watch.isPhoneCharging();
+    Serial.println(a == 1 ? "Charging" : "Not Charging"); // bool state = watch.isPhoneCharging();
     Serial.print("Level: ");
     Serial.print(b); // uint8_t level = watch.getPhoneBattery();
     Serial.println("%");
@@ -223,6 +223,20 @@ void configCallback(Config config, uint32_t a, uint32_t b)
     Serial.print(a); // int code = watch.getAppCode();
     Serial.print(" Version: ");
     Serial.println(watch.getAppVersion());
+    break;
+  case CF_QR:
+    // qr links
+    if (a == 0){
+      // individual qr links (b is the index)
+      Serial.print("QR code: ");
+      Serial.println(watch.getQrAt(b));
+    }
+    if (a == 1)
+    {
+      // end of qr links transmission
+      Serial.print("QR Links received. Count: ");
+      Serial.println(b);
+    }
     break;
   case CF_WEATHER:
     // weather is saved
@@ -292,6 +306,7 @@ void setup()
   watch.setDataCallback(dataCallback);
 
   watch.begin(); // initializes the BLE
+  // make sure the ESP32 is not paired with your phone in the bluetooth settings
   // go to Chronos app > Watches tab > Watches button > Pair New Devices > Search > Select your board
   // you only need to do it once. To disconnect, click on the rotating icon (Top Right)
 

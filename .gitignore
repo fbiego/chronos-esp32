@@ -1,2 +1,6 @@
 
 *.py
+.pio
+.vscode
+
+navigation.txt

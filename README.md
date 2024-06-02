@@ -12,6 +12,7 @@ Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 - [x] Notifications
 - [x] Weather
 - [x] Controls (Music, Find Phone, Camera)
+- [x] Phone Battery (Level, Charging state) (Chronos app v3.5.1+)
 - [ ] Alarms
 
 ## Companion App
@@ -39,14 +40,15 @@ bool isCameraReady();
 
 // notifications
 int getNotificationCount();
-Notification getNotificationAt(int index);
+Notification getNotificationAt(int index); // index [0-9]
 void clearNotifications();
 
 // weather
 int getWeatherCount();
 String getWeatherCity();
 String getWeatherTime();
-Weather getWeatherAt(int index);
+Weather getWeatherAt(int index); // index[0-6]
+HourlyForecast getForecastHour(int hour); // hour [0-23]
 
 // alarms
 Alarm getAlarm(int index);
@@ -68,6 +70,9 @@ uint8_t getPhoneBattery();
 int getAppCode();
 String getAppVersion();
 
+RemoteTouch getTouch(); // RemoteTouch(bool state, uint32_t x, uint32_t y)
+String getQrAt(int index); // index [0-8]
+
 // helper functions for ESP32Time
 int getHourC(); // return hour based on hour 24 variable
 String getHourZ(); // return zero padded hour string based on hour 24 variable
@@ -80,6 +85,10 @@ void setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t));
 void setDataCallback(void (*callback)(uint8_t *, int));
 void setRawDataCallback(void (*callback)(uint8_t *, int));
 ```
+
+## PlatformIO
+
+Open the project folder in VS Code with PlatformIO installed to directly run the example sketches. This makes it easier to develop and test features
 
 ## Dependencies
 - [`ESP32Time`](https://github.com/fbiego/ESP32Time)

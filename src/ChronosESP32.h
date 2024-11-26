@@ -326,6 +326,7 @@ private:
 	uint8_t _phoneBatteryLevel = 0;
 	bool _phoneCharging;
 	bool _notifyPhone = true;
+	bool _sendESP;
 
 	Notification _notifications[NOTIF_SIZE];
 	int _notificationIndex;

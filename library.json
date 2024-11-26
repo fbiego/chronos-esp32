@@ -1,6 +1,6 @@
 {
   "name": "ChronosESP32",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "keywords": "Arduino, ESP32, Time, BLE, Watch",
   "description": "A library for ESP32 to interface with Chronos app over BLE",
   "repository":

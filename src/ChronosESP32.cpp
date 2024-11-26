@@ -174,6 +174,10 @@ void ChronosESP32::loop()
 			_batteryChanged = false;
 			sendBattery();
 		}
+		if (_sendESP){
+			_sendESP = false;
+			sendESP();
+		}
 	}
 
 	if (_ringerTimer.active)
@@ -1249,7 +1253,7 @@ void ChronosESP32::dataReceived()
 				{
 					configurationReceivedCallback(CF_APP, _appCode, 0);
 				}
-				sendESP();
+				_sendESP = true;
 			}
 			break;
 		case 0xEE:

@@ -35,6 +35,8 @@ void loop();														  // handles routine functions
 bool isRunning();													  // check whether BLE server is inited and running
 void setName(String name);											  // set the BLE name (call before begin)
 void setScreen(ChronosScreen screen);								  // set the screen config (call before begin)
+void setChunkedTransfer(bool chunked);
+bool isSubscribed();
 
 // watch
 bool isConnected();

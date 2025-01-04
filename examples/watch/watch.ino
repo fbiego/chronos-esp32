@@ -270,6 +270,13 @@ void configCallback(Config config, uint32_t a, uint32_t b)
           Serial.print("\tLow:");
           Serial.print(w.low);
           Serial.println("°C");
+          if (i == 0)
+          {
+            Serial.print("Pressure: ");
+            Serial.print(w.pressure);
+            Serial.print("\tUV: ");
+            Serial.println(w.uv);
+          }
         }
       }
     }

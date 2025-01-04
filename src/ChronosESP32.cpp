@@ -51,8 +51,8 @@ ChronosESP32::ChronosESP32()
 	_notifications[0].app = "Chronos";
 	_notifications[0].message = "Download from Google Play to sync time and receive notifications";
 
-	_infoTimer.duration = 3 * 1000;	  // 3 seconds for info timer
-	_findTimer.duration = 30 * 1000;	  // 30 seconds for find phone
+	_infoTimer.duration = 3 * 1000;	   // 3 seconds for info timer
+	_findTimer.duration = 30 * 1000;   // 30 seconds for find phone
 	_ringerTimer.duration = 30 * 1000; // 30 seconds for ringer alert
 }
 
@@ -109,10 +109,10 @@ void ChronosESP32::begin()
 
 	BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
 	pAdvertising->addServiceUUID(SERVICE_UUID);
-	pAdvertising->setScanResponse(true);
-	pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
-	pAdvertising->setMinPreferred(0x12);
-	BLEDevice::startAdvertising();
+	pAdvertising->enableScanResponse(true);
+	pAdvertising->setPreferredParams(0x06, 0x12); // functions that help with iPhone connections issue
+	pAdvertising->setName(_watchName.c_str());
+	pAdvertising->start();
 
 	_address = BLEDevice::getAddress().toString().c_str();
 
@@ -141,7 +141,8 @@ bool ChronosESP32::isRunning()
 */
 void ChronosESP32::loop()
 {
-	if (!_inited){
+	if (!_inited)
+	{
 		// begin not called. do nothing
 		return;
 	}
@@ -174,7 +175,8 @@ void ChronosESP32::loop()
 			_batteryChanged = false;
 			sendBattery();
 		}
-		if (_sendESP){
+		if (_sendESP)
+		{
 			_sendESP = false;
 			sendESP();
 		}
@@ -195,11 +197,29 @@ void ChronosESP32::loop()
 }
 
 /*!
+	@brief  set whether to split transferred bytes
+	@param  chunked
+			enable or disable state
+*/
+void ChronosESP32::setChunkedTransfer(bool chunked)
+{
+	_chunked = chunked;
+}
+
+/*!
 	@brief  check whether the device is connected
 */
 bool ChronosESP32::isConnected()
 {
 	return _connected;
+}
+
+/*!
+	@brief  check whether the device is subcribed to ble notifications
+*/
+bool ChronosESP32::isSubscribed()
+{
+	return _subscribed;
 }
 
 /*!
@@ -418,14 +438,52 @@ void ChronosESP32::setAlarm(int index, Alarm alarm)
 */
 void ChronosESP32::sendCommand(uint8_t *command, size_t length)
 {
-	if (!_inited){
+	if (!_inited)
+	{
 		// begin not called. do nothing
 		return;
 	}
 
-	pCharacteristicTX->setValue(command, length);
-	pCharacteristicTX->notify();
-	vTaskDelay(200);
+	if (length <= 20 || !_chunked)
+	{
+		// Send the entire command if it fits in one packet
+		pCharacteristicTX->setValue(command, length);
+		pCharacteristicTX->notify();
+		vTaskDelay(200 / portTICK_PERIOD_MS);
+	}
+	else
+	{
+		// Send the first 20 bytes as is (no header)
+		pCharacteristicTX->setValue(command, 20);
+		pCharacteristicTX->notify();
+		vTaskDelay(200 / portTICK_PERIOD_MS);
+
+		// Send the remaining bytes with a header
+		const size_t maxPayloadSize = 19; // Payload size excluding header
+		uint8_t chunk[20];				  // Buffer for chunks with header
+		size_t offset = 20;				  // Start after the first 20 bytes
+		uint8_t sequenceNumber = 0;		  // Sequence number for headers
+
+		while (offset < length)
+		{
+			// Add the header (sequence number)
+			chunk[0] = sequenceNumber++;
+
+			// Calculate how many bytes to send in this chunk
+			size_t bytesToSend = min(maxPayloadSize, length - offset);
+
+			// Copy data to chunk, leaving space for the header
+			memcpy(chunk + 1, command + offset, bytesToSend);
+
+			// Send the chunk
+			pCharacteristicTX->setValue(chunk, bytesToSend + 1);
+			pCharacteristicTX->notify();
+			vTaskDelay(200 / portTICK_PERIOD_MS);
+
+			// Update offset
+			offset += bytesToSend;
+		}
+	}
 }
 
 /*!
@@ -493,14 +551,7 @@ int ChronosESP32::getHourC()
 */
 String ChronosESP32::getHourZ()
 {
-	if (_hour24)
-	{
-		return this->getTime("%H");
-	}
-	else
-	{
-		return this->getTime("%I");
-	}
+	return this->getTime(_hour24 ? "%H" : "%I");
 }
 
 /*!
@@ -510,15 +561,7 @@ String ChronosESP32::getHourZ()
 */
 String ChronosESP32::getAmPmC(bool caps)
 {
-	if (_hour24)
-	{
-		return "";
-	}
-	else
-	{
-		return this->getAmPm(!caps); // esp32time is getAmPm(bool lowercase);
-	}
-	return "";
+	return _hour24 ? "" : this->getAmPm(!caps); // on esp32time it's getAmPm(bool lowercase);
 }
 
 /*!
@@ -607,7 +650,7 @@ void ChronosESP32::sendInfo()
 void ChronosESP32::sendESP()
 {
 	String espInfo;
-	espInfo += "ChronosESP32 v" + String(CHRONOSESP_VERSION_MAJOR) + "." +  String(CHRONOSESP_VERSION_MINOR) + "." +  String(CHRONOSESP_VERSION_PATCH);
+	espInfo += "ChronosESP32 v" + String(CHRONOSESP_VERSION_MAJOR) + "." + String(CHRONOSESP_VERSION_MINOR) + "." + String(CHRONOSESP_VERSION_PATCH);
 	espInfo += "\n" + String(ESP.getChipModel());
 	espInfo += " @" + String(ESP.getCpuFreqMHz()) + "Mhz";
 	espInfo += " Cores:" + String(ESP.getChipCores());
@@ -623,16 +666,15 @@ void ChronosESP32::sendESP()
 	espInfo += "\nSDK: " + String(ESP.getSdkVersion());
 	espInfo += "\nSketch: " + String((ESP.getSketchSize() / (1024.0)), 0) + "kB";
 
-	char info[512];
 	uint16_t len = espInfo.length();
-	info[0] = 0xAB;
-	info[1] = highByte(len + 3);
-	info[2] = lowByte(len + 3);
-	info[3] = 0xFE;
-	info[4] = 0x92;
-	info[5] = 0x80;
-	espInfo.toCharArray(info + 6, 506);
-	sendCommand((uint8_t *)info, 6 + len);
+	_outgoingData.data[0] = 0xAB;
+	_outgoingData.data[1] = highByte(len + 3);
+	_outgoingData.data[2] = lowByte(len + 3);
+	_outgoingData.data[3] = 0xFE;
+	_outgoingData.data[4] = 0x92;
+	_outgoingData.data[5] = 0x80;
+	espInfo.toCharArray((char *)_outgoingData.data + 6, 506);
+	sendCommand((uint8_t *)_outgoingData.data, 6 + len);
 }
 
 /*!
@@ -782,12 +824,12 @@ String ChronosESP32::appName(int id)
 	@brief  onConnect from BLEServerCallbacks
 	@param  pServer
 			BLE server object
+	@param	connInfo
+			connection information
 */
-void ChronosESP32::onConnect(BLEServer *pServer)
+void ChronosESP32::onConnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo)
 {
 	_connected = true;
-	_infoTimer.time = millis();
-	_infoTimer.active = true;
 	if (connectionChangeCallback != nullptr)
 	{
 		connectionChangeCallback(true);
@@ -798,8 +840,12 @@ void ChronosESP32::onConnect(BLEServer *pServer)
 	@brief  onDisconnect from BLEServerCallbacks
 	@param  pServer
 			BLE server object
+	@param	connInfo
+			connection information
+	@param	reason
+			disconnect reason
 */
-void ChronosESP32::onDisconnect(BLEServer *pServer)
+void ChronosESP32::onDisconnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo, int reason)
 {
 	_connected = false;
 	_cameraReady = false;
@@ -822,11 +868,36 @@ void ChronosESP32::onDisconnect(BLEServer *pServer)
 }
 
 /*!
+	@brief  onSubscribe to BLECharacteristicCallbacks
+	@param  pCharacteristic
+			the BLECharacteristic object
+	@param	connInfo
+			connection information
+	@param	subValue
+			subcribe value
+*/
+void ChronosESP32::onSubscribe(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo &connInfo, uint16_t subValue)
+{
+	if (pCharacteristic == pCharacteristicTX)
+	{
+		_subscribed = subValue == 1;
+
+		if (_subscribed)
+		{
+			_infoTimer.time = millis();
+			_infoTimer.active = true;
+		}
+	}
+}
+
+/*!
 	@brief  onWrite from BLECharacteristicCallbacks
 	@param  pCharacteristic
 			the BLECharacteristic object
+	@param	connInfo
+			connection information
 */
-void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
+void ChronosESP32::onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo &connInfo)
 {
 	std::string pData = pCharacteristic->getValue();
 	int len = pData.length();
@@ -879,7 +950,6 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 			}
 		}
 
-
 		if (pData[0] == 0xB0)
 		{
 			// bin watchface chunk info
@@ -889,7 +959,6 @@ void ChronosESP32::onWrite(BLECharacteristic *pCharacteristic)
 		{
 			// bin watchface chunk data
 		}
-
 	}
 }
 
@@ -1123,6 +1192,12 @@ void ChronosESP32::dataReceived()
 			}
 		}
 		break;
+		case 0x8A:
+		{
+			_weather[0].uv = _incomingData.data[6];
+			_weather[0].pressure = (_incomingData.data[7] * 256) + _incomingData.data[8];
+		}
+		break;
 		case 0x7F:
 			if (configurationReceivedCallback != nullptr)
 			{
@@ -1173,7 +1248,7 @@ void ChronosESP32::dataReceived()
 				_contacts[pos].name += (char)_incomingData.data[i];
 			}
 		}
-			break;
+		break;
 		case 0xA3:
 		{
 			int pos = _incomingData.data[5];
@@ -1187,18 +1262,18 @@ void ChronosESP32::dataReceived()
 				digit[2] = digit[0]; // save digit at 0 to 2
 				digit[0] = digit[1]; // swap 1 to 0
 				digit[1] = digit[2]; // swap saved 2 to 1
-				digit[2] = 0; // null termination character
+				digit[2] = 0;		 // null termination character
 				_contacts[pos].number += digit;
 			}
 			_contacts[pos].number.replace("A", "+");
 			_contacts[pos].number = _contacts[pos].number.substring(0, nSize);
-			
+
 			if (configurationReceivedCallback != nullptr && pos == (_contactSize - 1))
 			{
 				configurationReceivedCallback(CF_CONTACT, 1, uint32_t(_sosContact << 8) | uint32_t(_contactSize));
 			}
 		}
-			break;
+		break;
 		case 0xA5:
 			_sosContact = _incomingData.data[6];
 			_contactSize = _incomingData.data[7];
@@ -1221,7 +1296,7 @@ void ChronosESP32::dataReceived()
 			{
 				// receiving qr data
 				int index = _incomingData.data[5]; // index of the curent link
-				_qrLinks[index] = "";			  // clear existing
+				_qrLinks[index] = "";			   // clear existing
 				for (int i = 6; i < len; i++)
 				{
 					_qrLinks[index] += (char)_incomingData.data[i];
@@ -1254,6 +1329,12 @@ void ChronosESP32::dataReceived()
 					configurationReceivedCallback(CF_APP, _appCode, 0);
 				}
 				_sendESP = true;
+			}
+			break;
+		case 0xCC:
+			if (_incomingData.data[3] == 0xFE)
+			{
+				setChunkedTransfer(_incomingData.data[5] != 0x00);
 			}
 			break;
 		case 0xEE:

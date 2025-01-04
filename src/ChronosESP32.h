@@ -38,7 +38,7 @@
 #include <ESP32Time.h>
 
 #define CHRONOSESP_VERSION_MAJOR 1
-#define CHRONOSESP_VERSION_MINOR 5
+#define CHRONOSESP_VERSION_MINOR 6
 #define CHRONOSESP_VERSION_PATCH 0
 
 #define CHRONOSESP_VERSION F(CHRONOSESP_VERSION_MAJOR "." CHRONOSESP_VERSION_MINOR "." CHRONOSESP_VERSION_PATCH)
@@ -85,6 +85,8 @@ struct Weather
 	int temp;
 	int high;
 	int low;
+	int pressure;
+	int uv;
 };
 
 struct HourlyForecast
@@ -234,6 +236,8 @@ public:
 	bool isRunning();													  // check whether BLE server is inited and running
 	void setName(String name);											  // set the BLE name (call before begin)
 	void setScreen(ChronosScreen screen);								  // set the screen config (call before begin)
+	void setChunkedTransfer(bool chunked);
+	bool isSubscribed();
 
 	// watch
 	bool isConnected();
@@ -316,6 +320,7 @@ private:
 	String _watchName = "Chronos ESP32";
 	String _address;
 	bool _inited;
+	bool _subscribed;
 	uint8_t _batteryLevel;
 	bool _isCharging;
 	bool _connected;
@@ -327,6 +332,7 @@ private:
 	bool _phoneCharging;
 	bool _notifyPhone = true;
 	bool _sendESP;
+	bool _chunked;
 
 	Notification _notifications[NOTIF_SIZE];
 	int _notificationIndex;
@@ -356,6 +362,7 @@ private:
 	ChronosTimer _ringerTimer;
 
 	ChronosData _incomingData;
+	ChronosData _outgoingData;
 
 	ChronosScreen _screenConf = CS_240x240_128_CTF;
 
@@ -376,11 +383,12 @@ private:
 	String flashMode(FlashMode_t mode);
 
 	// from BLEServerCallbacks
-	virtual void onConnect(BLEServer *pServer);
-	virtual void onDisconnect(BLEServer *pServer);
+	virtual void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override;
+	virtual void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override;
 
 	// from BLECharacteristicCallbacks
-	virtual void onWrite(BLECharacteristic *pCharacteristic);
+	virtual void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override;
+	virtual void onSubscribe(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo, uint16_t subValue) override;
 
 	void dataReceived();
 

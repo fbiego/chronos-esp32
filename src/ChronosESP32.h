@@ -38,7 +38,7 @@
 #include <ESP32Time.h>
 
 #define CHRONOSESP_VERSION_MAJOR 1
-#define CHRONOSESP_VERSION_MINOR 6
+#define CHRONOSESP_VERSION_MINOR 7
 #define CHRONOSESP_VERSION_PATCH 0
 
 #define CHRONOSESP_VERSION F(CHRONOSESP_VERSION_MAJOR "." CHRONOSESP_VERSION_MINOR "." CHRONOSESP_VERSION_PATCH)
@@ -75,6 +75,7 @@ struct Notification
 	int icon;
 	String app;
 	String time;
+	String title;
 	String message;
 };
 
@@ -277,7 +278,7 @@ public:
 	// getActiveAlarms
 
 	// control
-	void sendCommand(uint8_t *command, size_t length);
+	void sendCommand(uint8_t *command, size_t length, bool force_chunked = false);
 	void musicControl(Control command);
 	void setVolume(uint8_t level);
 	bool capturePhoto();
@@ -378,6 +379,8 @@ private:
 	void sendInfo();
 	void sendBattery();
 	void sendESP();
+
+	void splitTitle(const String &input, String &title, String &message, int icon);
 
 	String appName(int id);
 	String flashMode(FlashMode_t mode);

@@ -35,6 +35,8 @@ getForecastHour	KEYWORD2
 getTouch	KEYWORD2
 getQrAt	KEYWORD2
 getNavigation	KEYWORD2
+setChunkedTransfer  KEYWORD2
+isSubscribed    KEYWORD2
 
 Notification	LITERAL1
 Alarm	LITERAL1

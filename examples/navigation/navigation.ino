@@ -50,6 +50,7 @@ void notificationCallback(Notification notification)
     Serial.print(notification.app);
     Serial.print("\tIcon: ");
     Serial.println(notification.icon);
+    Serial.println(notification.title);
     Serial.println(notification.message);
 }
 

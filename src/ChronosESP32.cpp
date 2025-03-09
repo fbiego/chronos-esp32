@@ -98,7 +98,7 @@ void ChronosESP32::begin()
 	BLEDevice::init(_watchName.c_str());
 	BLEServer *pServer = BLEDevice::createServer();
 	BLEDevice::setMTU(517);
-	pServer->setCallbacks(this);
+	pServer->setCallbacks(this, false);
 
 	BLEService *pService = pServer->createService(SERVICE_UUID);
 	pCharacteristicTX = pService->createCharacteristic(CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY);
@@ -435,8 +435,10 @@ void ChronosESP32::setAlarm(int index, Alarm alarm)
 			command data
 	@param  length
 			command length
+	@param  force_chunked
+			override internal chunked
 */
-void ChronosESP32::sendCommand(uint8_t *command, size_t length)
+void ChronosESP32::sendCommand(uint8_t *command, size_t length, bool force_chunked)
 {
 	if (!_inited)
 	{
@@ -444,7 +446,7 @@ void ChronosESP32::sendCommand(uint8_t *command, size_t length)
 		return;
 	}
 
-	if (length <= 20 || !_chunked)
+	if ((length <= 20 || !_chunked) && !force_chunked)
 	{
 		// Send the entire command if it fits in one packet
 		pCharacteristicTX->setValue(command, length);
@@ -666,6 +668,11 @@ void ChronosESP32::sendESP()
 	espInfo += "\nSDK: " + String(ESP.getSdkVersion());
 	espInfo += "\nSketch: " + String((ESP.getSketchSize() / (1024.0)), 0) + "kB";
 
+	if (espInfo.length() > 505)
+	{
+		espInfo = espInfo.substring(0, 505);
+	}
+
 	uint16_t len = espInfo.length();
 	_outgoingData.data[0] = 0xAB;
 	_outgoingData.data[1] = highByte(len + 3);
@@ -674,7 +681,7 @@ void ChronosESP32::sendESP()
 	_outgoingData.data[4] = 0x92;
 	_outgoingData.data[5] = 0x80;
 	espInfo.toCharArray((char *)_outgoingData.data + 6, 506);
-	sendCommand((uint8_t *)_outgoingData.data, 6 + len);
+	sendCommand((uint8_t *)_outgoingData.data, 6 + len, true);
 }
 
 /*!
@@ -962,6 +969,20 @@ void ChronosESP32::onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo
 	}
 }
 
+void  ChronosESP32::splitTitle(const String &input, String &title, String &message, int icon) {
+    int index = input.indexOf(':');  // Find the first occurrence of ':'
+    int newlineIndex = input.indexOf('\n'); // Find the first occurrence of '\n'
+
+    if (index != -1 && index < 30 && (newlineIndex == -1 || newlineIndex > index)) {
+        // Split only if ':' is before index 30 and there's no '\n' before it
+        title = input.substring(0, index);
+        message = input.substring(index + 1);
+    } else {
+        title = appName(icon);  // No valid ':' before index 30, or '\n' appears before ':'
+        message = input; // Keep the full string in message
+    }
+}
+
 /*!
 	@brief  dataReceived function, called after data packets have been assembled
 */
@@ -1043,7 +1064,7 @@ void ChronosESP32::dataReceived()
 				_notifications[_notificationIndex % NOTIF_SIZE].icon = icon;
 				_notifications[_notificationIndex % NOTIF_SIZE].app = appName(icon);
 				_notifications[_notificationIndex % NOTIF_SIZE].time = this->getTime("%H:%M");
-				_notifications[_notificationIndex % NOTIF_SIZE].message = message;
+				splitTitle(message, _notifications[_notificationIndex % NOTIF_SIZE].title, _notifications[_notificationIndex % NOTIF_SIZE].message, icon);
 
 				if (notificationReceivedCallback != nullptr)
 				{
@@ -1361,17 +1382,26 @@ void ChronosESP32::dataReceived()
 				if (_incomingData.data[5] == 0x00)
 				{
 					_navigation.active = false;
+					_navigation.eta = "Navigation";
+					_navigation.title = "Chronos";
+					_navigation.duration = "Inactive";
+					_navigation.distance = "";
+					_navigation.directions = "Start navigation on Google maps";
+					_navigation.hasIcon = false;
+					_navigation.isNavigation = false;
+					_navigation.iconCRC = 0xFFFFFFFF;
 				}
 				else if (_incomingData.data[5] == 0xFF)
 				{
 					_navigation.active = true;
-					_navigation.title = "Disabled";
-					_navigation.duration = "";
+					_navigation.title = "Chronos";
+					_navigation.duration = "Disabled";
 					_navigation.distance = "";
-					_navigation.eta = "";
-					_navigation.directions = "Check app settings";
+					_navigation.eta = "Navigation";
+					_navigation.directions = "Check Chronos app settings";
 					_navigation.hasIcon = false;
 					_navigation.isNavigation = false;
+					_navigation.iconCRC = 0xFFFFFFFF;
 				}
 				else if (_incomingData.data[5] == 0x80)
 				{

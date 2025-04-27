@@ -53,7 +53,6 @@ ChronosESP32::ChronosESP32()
 
 	_infoTimer.duration = 3 * 1000;	   // 3 seconds for info timer
 	_findTimer.duration = 30 * 1000;   // 30 seconds for find phone
-	_ringerTimer.duration = 30 * 1000; // 30 seconds for ringer alert
 }
 
 /*!
@@ -182,18 +181,6 @@ void ChronosESP32::loop()
 		}
 	}
 
-	if (_ringerTimer.active)
-	{
-		if (_ringerTimer.time + _ringerTimer.duration < millis())
-		{
-			// ring timer end
-			_ringerTimer.active = false;
-			if (ringerAlertCallback != nullptr)
-			{
-				ringerAlertCallback("", false);
-			}
-		}
-	}
 }
 
 /*!
@@ -1039,8 +1026,6 @@ void ChronosESP32::dataReceived()
 
 			if (icon == 0x01)
 			{
-				_ringerTimer.time = millis();
-				_ringerTimer.active = true;
 				// ringer command
 				if (ringerAlertCallback != nullptr)
 				{
@@ -1050,7 +1035,6 @@ void ChronosESP32::dataReceived()
 			}
 			if (icon == 0x02)
 			{
-				_ringerTimer.active = false;
 				// cancel ringer command
 				if (ringerAlertCallback != nullptr)
 				{

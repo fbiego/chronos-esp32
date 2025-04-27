@@ -39,7 +39,7 @@
 
 #define CHRONOSESP_VERSION_MAJOR 1
 #define CHRONOSESP_VERSION_MINOR 7
-#define CHRONOSESP_VERSION_PATCH 0
+#define CHRONOSESP_VERSION_PATCH 1
 
 #define CHRONOSESP_VERSION F(CHRONOSESP_VERSION_MAJOR "." CHRONOSESP_VERSION_MINOR "." CHRONOSESP_VERSION_PATCH)
 
@@ -360,7 +360,6 @@ private:
 
 	ChronosTimer _infoTimer;
 	ChronosTimer _findTimer;
-	ChronosTimer _ringerTimer;
 
 	ChronosData _incomingData;
 	ChronosData _outgoingData;

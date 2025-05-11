@@ -578,6 +578,8 @@ void ChronosESP32::setQr(int index, String qr)
 
 /*!
 	@brief  set the connection callback
+	@param  callback
+			callback function
 */
 void ChronosESP32::setConnectionCallback(void (*callback)(bool))
 {
@@ -586,6 +588,8 @@ void ChronosESP32::setConnectionCallback(void (*callback)(bool))
 
 /*!
 	@brief  set the notification callback
+	@param  callback
+			callback function
 */
 void ChronosESP32::setNotificationCallback(void (*callback)(Notification))
 {
@@ -594,6 +598,8 @@ void ChronosESP32::setNotificationCallback(void (*callback)(Notification))
 
 /*!
 	@brief  set the ringer callback
+	@param  callback
+			callback function
 */
 void ChronosESP32::setRingerCallback(void (*callback)(String, bool))
 {
@@ -602,6 +608,8 @@ void ChronosESP32::setRingerCallback(void (*callback)(String, bool))
 
 /*!
 	@brief  set the configuration callback
+	@param  callback
+			callback function
 */
 void ChronosESP32::setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t))
 {
@@ -610,6 +618,8 @@ void ChronosESP32::setConfigurationCallback(void (*callback)(Config, uint32_t, u
 
 /*!
 	@brief  set the data callback, assembled data packets matching the specified format (should start with 0xAB or 0xEA)
+	@param  callback
+			callback function
 */
 void ChronosESP32::setDataCallback(void (*callback)(uint8_t *, int))
 {
@@ -618,10 +628,22 @@ void ChronosESP32::setDataCallback(void (*callback)(uint8_t *, int))
 
 /*!
 	@brief  set the raw data callback, all incoming data via ble
+	@param  callback
+			callback function
 */
 void ChronosESP32::setRawDataCallback(void (*callback)(uint8_t *, int))
 {
 	rawDataReceivedCallback = callback;
+}
+
+/*!
+	@brief  set the health request callback
+	@param  callback
+			callback function
+*/
+void ChronosESP32::setHealthRequestCallback(void (*callback)(HealthRequest, bool))
+{
+	healthRequestCallback = callback;
 }
 
 /*!
@@ -716,6 +738,343 @@ void ChronosESP32::setNotifyBattery(bool state)
 	uint8_t s = state ? 0x01 : 0x00;
 	uint8_t batRq[] = {0xAB, 0x00, 0x04, 0xFE, 0x91, 0x80, s}; // custom command AB..FE
 	sendCommand(batRq, 7);
+}
+
+/*!
+	@brief  send the realtime steps & calories, this will be shown on the app homepage and notification if enabled
+	@param  steps
+			current steps value
+	@param  calories
+			current calories value
+	@note   the data sent will not be saved in the app
+*/
+void ChronosESP32::sendRealtimeSteps(uint32_t steps, uint32_t calories)
+{
+	uint8_t stepsCmd[] = {
+		0xAB, 0x00, 0x0E, 0xFF, 0x51, 0x08, 
+		(uint8_t)(steps >> 16), (uint8_t)(steps >> 8), (uint8_t)(steps), 
+		(uint8_t)(calories >> 16), (uint8_t)(calories >> 8), (uint8_t)(calories),
+		0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	sendCommand(stepsCmd, 17);
+}
+/*!
+	@brief  send the realtime heart rate, this should be sent after the request from the app
+	@param  heartRate
+			current heart rate value
+	@note   the data sent will be saved with the current date and time
+*/
+void ChronosESP32::sendRealtimeHeartRate(uint8_t heartRate)
+{
+	// AB 00 05 FF 31 0A 49 1B
+	uint8_t heartCmd[] = {
+		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x0A, heartRate, 0x1B
+	};
+	sendCommand(heartCmd, 8);
+}
+
+/*!
+	@brief  send the realtime blood pressure, this should be sent after the request from the app
+	@param  systolic
+			systolic blood pressure value
+	@param  diastolic
+			diastolic blood pressure value
+	@note   the data sent will be saved with the current date and time
+*/
+void ChronosESP32::sendRealtimeBloodPressure(uint8_t systolic, uint8_t diastolic)
+{
+	// AB 00 05 FF 31 22 71 4C
+	uint8_t pressureCmd[] = {
+		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x22, systolic, diastolic
+	};
+	sendCommand(pressureCmd, 8);
+}
+
+/*!
+	@brief  send the realtime blood oxygen, this should be sent after the request from the app
+	@param  bloodOxygen
+			current blood oxygen value
+	@note   the data sent will be saved with the current date and time
+*/
+void ChronosESP32::sendRealtimeBloodOxygen(uint8_t bloodOxygen)
+{
+	// AB 00 05 FF 31 12 62 30
+	uint8_t oxygenCmd[] = {
+		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x12, bloodOxygen, 0x30
+	};
+	sendCommand(oxygenCmd, 8);
+}
+
+/*!
+	@brief  send the realtime health data, this should be sent after the request from the app
+	@param  heartRate
+			current heart rate value
+	@param  bloodOxygen
+			current blood oxygen value
+	@param  systolic
+			systolic blood pressure value
+	@param  diastolic
+			diastolic blood pressure value
+	@note   the data sent will be saved with the current date and time
+*/
+void ChronosESP32::sendRealtimeHealthData(uint8_t heartRate, uint8_t bloodOxygen, uint8_t systolic, uint8_t diastolic)
+{
+	// AB 00 07 FF 32 80 44 61 72 4B
+	uint8_t healthCmd[] = {
+		0xAB, 0x00, 0x07, 0xFF, 0x32, 0x80, heartRate, bloodOxygen, systolic, diastolic
+	};
+	sendCommand(healthCmd, 10);
+}
+
+/*!
+	@brief  send a single steps record, the steps is typically grouped by the hour
+	@param  steps
+			steps value
+	@param  calories
+			calories value
+	@param  hour
+			hour of the record
+	@param  day
+			day of the record
+	@param  month
+			month of the record
+	@param  year
+			year of the record
+	@param  heartRate
+			heart rate value if available (optional)
+	@param  bloodOxygen
+			blood oxygen value if available (optional)
+	@param  systolic
+			systolic blood pressure value if available  (optional)
+	@param  diastolic
+			diastolic blood pressure value if available  (optional)
+*/
+void ChronosESP32::sendStepsRecord(uint32_t steps, uint32_t calories, uint8_t hour, uint8_t day, uint8_t month, uint32_t year, uint8_t heartRate, uint8_t bloodOxygen, uint8_t systolic, uint8_t diastolic)
+{
+	uint8_t stepsCmd[] = {
+		0xAB, 0x00, 0x16, 0xFF, 0x51, 0x20, 
+		(uint8_t)(year - 2000),	 month, day, hour,
+		(uint8_t)(steps >> 16), (uint8_t)(steps >> 8), (uint8_t)(steps), 
+		(uint8_t)(calories >> 16), (uint8_t)(calories >> 8), (uint8_t)(calories),
+		heartRate, bloodOxygen, systolic, diastolic,
+		0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	sendCommand(stepsCmd, 25);
+}
+
+/*!
+	@brief  send a single heart rate record
+	@param  heartRate
+			heart rate value
+	@param  minute
+			minute of the record
+	@param  hour
+			hour of the record
+	@param  day
+			day of the record
+	@param  month
+			month of the record
+	@param  year
+			year of the record
+*/
+void ChronosESP32::sendHeartRateRecord(uint8_t heartRate, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
+{
+	uint8_t heartCmd[] = {
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x11, 
+		(uint8_t)(year - 2000),	 month, day, hour, minute,
+		heartRate, 0x00
+	};
+	sendCommand(heartCmd, 13);
+}
+
+/*!
+	@brief  send a single blood pressure record
+	@param  systolic
+			systolic blood pressure value
+	@param  diastolic
+			diastolic blood pressure value
+	@param  minute
+			minute of the record
+	@param  hour
+			hour of the record
+	@param  day
+			day of the record
+	@param  month
+			month of the record
+	@param  year
+			year of the record
+*/
+void ChronosESP32::sendBloodPressureRecord(uint8_t systolic, uint8_t diastolic, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
+{
+	uint8_t pressureCmd[] = {
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x14, 
+		(uint8_t)(year - 2000),	 month, day, hour, minute,
+		systolic, diastolic
+	};
+	sendCommand(pressureCmd, 13);
+}
+
+/*!
+	@brief  send a single blood oxygen record
+	@param  bloodOxygen
+			blood oxygen value
+	@param  minute
+			minute of the record
+	@param  hour
+			hour of the record
+	@param  day
+			day of the record
+	@param  month
+			month of the record
+	@param  year
+			year of the record
+*/
+void ChronosESP32::sendBloodOxygenRecord(uint8_t bloodOxygen, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
+{
+	uint8_t oxygenCmd[] = {
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x12, 
+		(uint8_t)(year - 2000),	 month, day, hour, minute,
+		bloodOxygen, 0x00
+	};
+	sendCommand(oxygenCmd, 13);
+}
+
+/*!
+	@brief  send a single sleep record
+	@param  sleepTime
+			sleep time in minutes
+	@param  type
+			sleep type (0 - light, 1 - deep)
+	@param  minute
+			minute of the record
+	@param  hour
+			hour of the record
+	@param  day
+			day of the record
+	@param  month
+			month of the record
+	@param  year
+			year of the record
+*/
+void ChronosESP32::sendSleepRecord(uint16_t sleepTime, SleepType type, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
+{
+	uint8_t sleepCmd[] = {
+		0xAB, 0x00, 0x0B, 0xFF, 0x52, 0x80, 
+		(uint8_t)(year - 2000),	 month, day, hour, minute,
+		(uint8_t)(type), highByte(sleepTime), lowByte(sleepTime)
+	};
+	sendCommand(sleepCmd, 14);
+}
+
+/*!
+	@brief  send a single temperature record
+	@param  temperature
+			temperature value
+	@param  minute
+			minute of the record
+	@param  hour
+			hour of the record
+	@param  day
+			day of the record
+	@param  month
+			month of the record
+	@param  year
+			year of the record
+*/
+void ChronosESP32::sendTemperatureRecord(float temperature, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
+{
+	uint8_t tempCmd[] = {
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x13, 
+		(uint8_t)(year - 2000),	 month, day, hour, minute,
+		(uint8_t)(temperature), (uint8_t)((uint16_t)(temperature * 100.0) % 100)
+	};
+	sendCommand(tempCmd, 13);
+}
+
+/*!
+	@brief  send a single steps record, the steps is typically grouped by the hour
+	@param  steps
+			steps value
+	@param  calories
+			calories value
+	@param  dateTime
+			date and time of the record
+	@param  heartRate
+			heart rate value if available (optional)
+	@param  bloodOxygen
+			blood oxygen value if available (optional)
+	@param  systolic
+			systolic blood pressure value if available  (optional)
+	@param  diastolic
+			diastolic blood pressure value if available  (optional)
+*/
+void ChronosESP32::sendStepsRecord(uint32_t steps, uint32_t calories, DateTime dateTime, uint8_t heartRate, uint8_t bloodOxygen, uint8_t systolic, uint8_t diastolic)
+{
+	sendStepsRecord(steps, calories, dateTime.hour, dateTime.day, dateTime.month, dateTime.year, heartRate, bloodOxygen, systolic, diastolic);
+}
+
+/*!
+	@brief  send a single heart rate record
+	@param  heartRate
+			heart rate value
+	@param  dateTime
+			date and time of the record
+*/
+void ChronosESP32::sendHeartRateRecord(uint8_t heartRate, DateTime dateTime)
+{
+	sendHeartRateRecord(heartRate, dateTime.minute, dateTime.hour, dateTime.day, dateTime.month, dateTime.year);
+}
+
+/*!
+	@brief  send a single blood pressure record
+	@param  systolic
+			systolic blood pressure value
+	@param  diastolic
+			diastolic blood pressure value
+	@param  dateTime
+			date and time of the record
+*/
+void ChronosESP32::sendBloodPressureRecord(uint8_t systolic, uint8_t diastolic, DateTime dateTime)
+{
+	sendBloodPressureRecord(systolic, diastolic, dateTime.minute, dateTime.hour, dateTime.day, dateTime.month, dateTime.year);
+}
+
+/*!
+	@brief  send a single blood oxygen record
+	@param  bloodOxygen
+			blood oxygen value
+	@param  dateTime
+			date and time of the record
+*/
+void ChronosESP32::sendBloodOxygenRecord(uint8_t bloodOxygen, DateTime dateTime)
+{
+	sendBloodOxygenRecord(bloodOxygen, dateTime.minute, dateTime.hour, dateTime.day, dateTime.month, dateTime.year);
+}
+
+/*!
+	@brief  send a single temperature record
+	@param  temperature
+			temperature value
+	@param  dateTime
+			date and time of the record
+*/
+void ChronosESP32::sendTemperatureRecord(float temperature, DateTime dateTime)
+{
+	sendTemperatureRecord(temperature, dateTime.minute, dateTime.hour, dateTime.day, dateTime.month, dateTime.year);
+}
+
+/*!
+	@brief  send a single sleep record
+	@param  sleepTime
+			sleep time in minutes
+	@param  type
+			sleep type (0 - light, 1 - deep)
+	@param  dateTime
+			date and time of the record
+*/
+void ChronosESP32::sendSleepRecord(uint16_t sleepTime, SleepType type, DateTime dateTime)
+{
+	sendSleepRecord(sleepTime, type, dateTime.minute, dateTime.hour, dateTime.day, dateTime.month, dateTime.year);
 }
 
 /*!
@@ -991,6 +1350,59 @@ void ChronosESP32::dataReceived()
 			{
 				configurationReceivedCallback(CF_RST, 0, 0);
 			}
+			break;
+		case 0x31:
+			switch (_incomingData.data[5])
+			{
+			case 0x0A:
+				if (healthRequestCallback != nullptr)
+				{
+					healthRequestCallback(HR_HEART_RATE_MEASURE, _incomingData.data[6]);
+				}
+				break;
+			case 0x12:
+				if (healthRequestCallback != nullptr)
+				{
+					healthRequestCallback(HR_BLOOD_OXYGEN_MEASURE, _incomingData.data[6]);
+				}
+				break;
+			case 0x22:
+				if (healthRequestCallback != nullptr)
+				{
+					healthRequestCallback(HR_BLOOD_PRESSURE_MEASURE, _incomingData.data[6]);
+				}
+				break;
+			}
+			break;
+		case 0x32:
+			if (healthRequestCallback != nullptr)
+			{
+				healthRequestCallback(HR_MEASURE_ALL, _incomingData.data[6]);
+			}
+			break;
+		case 0x51:
+			switch (_incomingData.data[5])
+			{
+			case 0x80:
+				if (healthRequestCallback != nullptr)
+				{
+					healthRequestCallback(HR_STEPS_RECORDS, true);
+				}
+				break;
+			}
+			
+			break;
+		case 0x52:
+			switch (_incomingData.data[5])
+			{
+			case 0x80:
+				if (healthRequestCallback != nullptr)
+				{
+					healthRequestCallback(HR_SLEEP_RECORDS, true);
+				}
+				break;
+			}
+			
 			break;
 		case 0x53:
 			if (configurationReceivedCallback != nullptr)

@@ -38,8 +38,8 @@
 #include <ESP32Time.h>
 
 #define CHRONOSESP_VERSION_MAJOR 1
-#define CHRONOSESP_VERSION_MINOR 7
-#define CHRONOSESP_VERSION_PATCH 1
+#define CHRONOSESP_VERSION_MINOR 8
+#define CHRONOSESP_VERSION_PATCH 0
 
 #define CHRONOSESP_VERSION F(CHRONOSESP_VERSION_MAJOR "." CHRONOSESP_VERSION_MINOR "." CHRONOSESP_VERSION_PATCH)
 
@@ -68,6 +68,13 @@ enum Control
 	VOLUME_UP = 0x99A1,
 	VOLUME_DOWN = 0x99A2,
 	VOLUME_MUTE = 0x99A3,
+};
+
+enum SleepType
+{
+	SLEEP_AWAKE = 0,
+	SLEEP_LIGHT = 1,
+	SLEEP_DEEP = 2,
 };
 
 struct Notification
@@ -157,9 +164,19 @@ struct Contact
 	String number;
 };
 
+struct DateTime
+{
+	uint8_t second;
+	uint8_t minute;
+	uint8_t hour;
+	uint8_t day;
+	uint8_t month;
+	uint32_t year;
+};
+
 enum Config
 {
-	CF_TIME = 0, // time - 
+	CF_TIME = 0, // time -
 	CF_RTW,		 // raise to wake  -
 	CF_HR24,	 // 24 hour mode -
 	CF_LANG,	 // watch language -
@@ -182,6 +199,17 @@ enum Config
 	CF_NAV_DATA, // navigation data received
 	CF_NAV_ICON, // navigation icon received
 	CF_CONTACT,	 // contacts data received
+};
+
+enum HealthRequest
+{
+	HR_STEPS_RECORDS = 0, // app is requesting step records
+	HR_SLEEP_RECORDS,	// app is requesting sleep records
+
+	HR_HEART_RATE_MEASURE, // app has started heart rate measurement
+	HR_BLOOD_OXYGEN_MEASURE, 	// app has started blood oxygen measurement
+	HR_BLOOD_PRESSURE_MEASURE, 	// app has started blood pressure measurement
+	HR_MEASURE_ALL,		 // app has started all health measurements
 };
 
 /*
@@ -304,6 +332,28 @@ public:
 	void setSOSContactIndex(int index);
 	int getSOSContactIndex();
 
+	// health data
+	void sendRealtimeSteps(uint32_t steps, uint32_t calories);
+	void sendRealtimeHeartRate(uint8_t heartRate);
+	void sendRealtimeBloodPressure(uint8_t systolic, uint8_t diastolic);
+	void sendRealtimeBloodOxygen(uint8_t bloodOxygen);
+	void sendRealtimeHealthData(uint8_t heartRate, uint8_t bloodOxygen, uint8_t systolic, uint8_t diastolic);
+
+	void sendStepsRecord(uint32_t steps, uint32_t calories, uint8_t hour, uint8_t day, uint8_t month, uint32_t year, uint8_t heartRate = 0, uint8_t bloodOxygen = 0, uint8_t systolic = 0, uint8_t diastolic = 0);
+	void sendHeartRateRecord(uint8_t heartRate, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year);
+	void sendBloodPressureRecord(uint8_t systolic, uint8_t diastolic, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year);
+	void sendBloodOxygenRecord(uint8_t bloodOxygen, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year);
+	void sendSleepRecord(uint16_t sleepTime, SleepType type, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year);
+	void sendTemperatureRecord(float temperature, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year);
+
+	void sendStepsRecord(uint32_t steps, uint32_t calories, DateTime dateTime, uint8_t heartRate = 0, uint8_t bloodOxygen = 0, uint8_t systolic = 0, uint8_t diastolic = 0);
+	void sendHeartRateRecord(uint8_t heartRate, DateTime dateTime);
+	void sendBloodPressureRecord(uint8_t systolic, uint8_t diastolic, DateTime dateTime);
+	void sendBloodOxygenRecord(uint8_t bloodOxygen, DateTime dateTime);
+	void sendTemperatureRecord(float temperature, DateTime dateTime);
+	void sendSleepRecord(uint16_t sleepTime, SleepType type, DateTime dateTime);
+
+
 	// helper functions for ESP32Time
 	int getHourC();					   // return hour based on 24-hour variable (0-12 or 0-23)
 	String getHourZ();				   // return zero padded hour string based on 24-hour variable (00-12 or 00-23)
@@ -316,6 +366,7 @@ public:
 	void setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t));
 	void setDataCallback(void (*callback)(uint8_t *, int));
 	void setRawDataCallback(void (*callback)(uint8_t *, int));
+	void setHealthRequestCallback(void (*callback)(HealthRequest, bool));
 
 private:
 	String _watchName = "Chronos ESP32";
@@ -374,6 +425,7 @@ private:
 	void (*configurationReceivedCallback)(Config, uint32_t, uint32_t) = nullptr;
 	void (*dataReceivedCallback)(uint8_t *, int) = nullptr;
 	void (*rawDataReceivedCallback)(uint8_t *, int) = nullptr;
+	void (*healthRequestCallback)(HealthRequest, bool) = nullptr;
 
 	void sendInfo();
 	void sendBattery();
@@ -385,12 +437,12 @@ private:
 	String flashMode(FlashMode_t mode);
 
 	// from BLEServerCallbacks
-	virtual void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override;
-	virtual void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override;
+	virtual void onConnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo) override;
+	virtual void onDisconnect(NimBLEServer *pServer, NimBLEConnInfo &connInfo, int reason) override;
 
 	// from BLECharacteristicCallbacks
-	virtual void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override;
-	virtual void onSubscribe(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo, uint16_t subValue) override;
+	virtual void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo &connInfo) override;
+	virtual void onSubscribe(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo &connInfo, uint16_t subValue) override;
 
 	void dataReceived();
 

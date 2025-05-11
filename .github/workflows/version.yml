@@ -1,0 +1,22 @@
+name: Validate Library Version
+
+on:
+  pull_request:
+    branches:
+      - main  # or your default branch
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run version validation script
+        run: python3 .github/scripts/version.py

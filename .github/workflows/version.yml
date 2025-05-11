@@ -19,4 +19,4 @@ jobs:
           python-version: '3.x'
 
       - name: Run version validation script
-        run: python3 .github/scripts/version.py
+        run: python3 scripts/version.py

@@ -32,7 +32,6 @@
 
 #include <ChronosESP32.h>
 
-
 ChronosESP32 watch("Chronos Health"); // set the bluetooth name
 
 bool send_health = false; // flag to send health data
@@ -123,7 +122,6 @@ void loop()
     watch.sendStepsRecord(646, 45, 14, watch.getDay(), watch.getMonth() + 1, watch.getYear(), 73, 99, 126, 78);   // send steps records
     watch.sendStepsRecord(2345, 69, 14, watch.getDay(), watch.getMonth() + 1, watch.getYear(), 76, 96, 110, 70);  // send steps records
     watch.sendStepsRecord(5654, 124, 15, watch.getDay(), watch.getMonth() + 1, watch.getYear(), 75, 97, 114, 76); // send steps records
-
 
     // heart rate records
     watch.sendHeartRateRecord(78, 30, 11, watch.getDay(), watch.getMonth() + 1, watch.getYear());

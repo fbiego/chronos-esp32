@@ -204,12 +204,12 @@ enum Config
 enum HealthRequest
 {
 	HR_STEPS_RECORDS = 0, // app is requesting step records
-	HR_SLEEP_RECORDS,	// app is requesting sleep records
+	HR_SLEEP_RECORDS,	  // app is requesting sleep records
 
-	HR_HEART_RATE_MEASURE, // app has started heart rate measurement
-	HR_BLOOD_OXYGEN_MEASURE, 	// app has started blood oxygen measurement
-	HR_BLOOD_PRESSURE_MEASURE, 	// app has started blood pressure measurement
-	HR_MEASURE_ALL,		 // app has started all health measurements
+	HR_HEART_RATE_MEASURE,	   // app has started heart rate measurement
+	HR_BLOOD_OXYGEN_MEASURE,   // app has started blood oxygen measurement
+	HR_BLOOD_PRESSURE_MEASURE, // app has started blood pressure measurement
+	HR_MEASURE_ALL,			   // app has started all health measurements
 };
 
 /*
@@ -352,7 +352,6 @@ public:
 	void sendBloodOxygenRecord(uint8_t bloodOxygen, DateTime dateTime);
 	void sendTemperatureRecord(float temperature, DateTime dateTime);
 	void sendSleepRecord(uint16_t sleepTime, SleepType type, DateTime dateTime);
-
 
 	// helper functions for ESP32Time
 	int getHourC();					   // return hour based on 24-hour variable (0-12 or 0-23)

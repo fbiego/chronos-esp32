@@ -92,8 +92,6 @@ void setup()
 
   watch.setBattery(80); // set the battery level, will be synced to the app
 
-  // watch.clearNotifications(); // clear the default notification (Chronos app install text)
-
   watch.set24Hour(true); // the 24 hour mode will be overwritten when the command is received from the app
 }
 

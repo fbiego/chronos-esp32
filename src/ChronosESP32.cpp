@@ -51,8 +51,8 @@ ChronosESP32::ChronosESP32()
 	_notifications[0].app = "Chronos";
 	_notifications[0].message = "Download from Google Play to sync time and receive notifications";
 
-	_infoTimer.duration = 3 * 1000;	   // 3 seconds for info timer
-	_findTimer.duration = 30 * 1000;   // 30 seconds for find phone
+	_infoTimer.duration = 3 * 1000;	 // 3 seconds for info timer
+	_findTimer.duration = 30 * 1000; // 30 seconds for find phone
 }
 
 /*!
@@ -180,7 +180,6 @@ void ChronosESP32::loop()
 			sendESP();
 		}
 	}
-
 }
 
 /*!
@@ -751,11 +750,10 @@ void ChronosESP32::setNotifyBattery(bool state)
 void ChronosESP32::sendRealtimeSteps(uint32_t steps, uint32_t calories)
 {
 	uint8_t stepsCmd[] = {
-		0xAB, 0x00, 0x0E, 0xFF, 0x51, 0x08, 
-		(uint8_t)(steps >> 16), (uint8_t)(steps >> 8), (uint8_t)(steps), 
+		0xAB, 0x00, 0x0E, 0xFF, 0x51, 0x08,
+		(uint8_t)(steps >> 16), (uint8_t)(steps >> 8), (uint8_t)(steps),
 		(uint8_t)(calories >> 16), (uint8_t)(calories >> 8), (uint8_t)(calories),
-		0x00, 0x00, 0x00, 0x00, 0x00
-	};
+		0x00, 0x00, 0x00, 0x00, 0x00};
 	sendCommand(stepsCmd, 17);
 }
 /*!
@@ -768,8 +766,7 @@ void ChronosESP32::sendRealtimeHeartRate(uint8_t heartRate)
 {
 	// AB 00 05 FF 31 0A 49 1B
 	uint8_t heartCmd[] = {
-		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x0A, heartRate, 0x1B
-	};
+		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x0A, heartRate, 0x1B};
 	sendCommand(heartCmd, 8);
 }
 
@@ -785,8 +782,7 @@ void ChronosESP32::sendRealtimeBloodPressure(uint8_t systolic, uint8_t diastolic
 {
 	// AB 00 05 FF 31 22 71 4C
 	uint8_t pressureCmd[] = {
-		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x22, systolic, diastolic
-	};
+		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x22, systolic, diastolic};
 	sendCommand(pressureCmd, 8);
 }
 
@@ -800,8 +796,7 @@ void ChronosESP32::sendRealtimeBloodOxygen(uint8_t bloodOxygen)
 {
 	// AB 00 05 FF 31 12 62 30
 	uint8_t oxygenCmd[] = {
-		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x12, bloodOxygen, 0x30
-	};
+		0xAB, 0x00, 0x05, 0xFF, 0x31, 0x12, bloodOxygen, 0x30};
 	sendCommand(oxygenCmd, 8);
 }
 
@@ -821,8 +816,7 @@ void ChronosESP32::sendRealtimeHealthData(uint8_t heartRate, uint8_t bloodOxygen
 {
 	// AB 00 07 FF 32 80 44 61 72 4B
 	uint8_t healthCmd[] = {
-		0xAB, 0x00, 0x07, 0xFF, 0x32, 0x80, heartRate, bloodOxygen, systolic, diastolic
-	};
+		0xAB, 0x00, 0x07, 0xFF, 0x32, 0x80, heartRate, bloodOxygen, systolic, diastolic};
 	sendCommand(healthCmd, 10);
 }
 
@@ -852,13 +846,12 @@ void ChronosESP32::sendRealtimeHealthData(uint8_t heartRate, uint8_t bloodOxygen
 void ChronosESP32::sendStepsRecord(uint32_t steps, uint32_t calories, uint8_t hour, uint8_t day, uint8_t month, uint32_t year, uint8_t heartRate, uint8_t bloodOxygen, uint8_t systolic, uint8_t diastolic)
 {
 	uint8_t stepsCmd[] = {
-		0xAB, 0x00, 0x16, 0xFF, 0x51, 0x20, 
-		(uint8_t)(year - 2000),	 month, day, hour,
-		(uint8_t)(steps >> 16), (uint8_t)(steps >> 8), (uint8_t)(steps), 
+		0xAB, 0x00, 0x16, 0xFF, 0x51, 0x20,
+		(uint8_t)(year - 2000), month, day, hour,
+		(uint8_t)(steps >> 16), (uint8_t)(steps >> 8), (uint8_t)(steps),
 		(uint8_t)(calories >> 16), (uint8_t)(calories >> 8), (uint8_t)(calories),
 		heartRate, bloodOxygen, systolic, diastolic,
-		0x00, 0x00, 0x00, 0x00, 0x00
-	};
+		0x00, 0x00, 0x00, 0x00, 0x00};
 	sendCommand(stepsCmd, 25);
 }
 
@@ -880,10 +873,9 @@ void ChronosESP32::sendStepsRecord(uint32_t steps, uint32_t calories, uint8_t ho
 void ChronosESP32::sendHeartRateRecord(uint8_t heartRate, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
 {
 	uint8_t heartCmd[] = {
-		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x11, 
-		(uint8_t)(year - 2000),	 month, day, hour, minute,
-		heartRate, 0x00
-	};
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x11,
+		(uint8_t)(year - 2000), month, day, hour, minute,
+		heartRate, 0x00};
 	sendCommand(heartCmd, 13);
 }
 
@@ -907,10 +899,9 @@ void ChronosESP32::sendHeartRateRecord(uint8_t heartRate, uint8_t minute, uint8_
 void ChronosESP32::sendBloodPressureRecord(uint8_t systolic, uint8_t diastolic, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
 {
 	uint8_t pressureCmd[] = {
-		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x14, 
-		(uint8_t)(year - 2000),	 month, day, hour, minute,
-		systolic, diastolic
-	};
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x14,
+		(uint8_t)(year - 2000), month, day, hour, minute,
+		systolic, diastolic};
 	sendCommand(pressureCmd, 13);
 }
 
@@ -932,10 +923,9 @@ void ChronosESP32::sendBloodPressureRecord(uint8_t systolic, uint8_t diastolic, 
 void ChronosESP32::sendBloodOxygenRecord(uint8_t bloodOxygen, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
 {
 	uint8_t oxygenCmd[] = {
-		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x12, 
-		(uint8_t)(year - 2000),	 month, day, hour, minute,
-		bloodOxygen, 0x00
-	};
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x12,
+		(uint8_t)(year - 2000), month, day, hour, minute,
+		bloodOxygen, 0x00};
 	sendCommand(oxygenCmd, 13);
 }
 
@@ -959,10 +949,9 @@ void ChronosESP32::sendBloodOxygenRecord(uint8_t bloodOxygen, uint8_t minute, ui
 void ChronosESP32::sendSleepRecord(uint16_t sleepTime, SleepType type, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
 {
 	uint8_t sleepCmd[] = {
-		0xAB, 0x00, 0x0B, 0xFF, 0x52, 0x80, 
-		(uint8_t)(year - 2000),	 month, day, hour, minute,
-		(uint8_t)(type), highByte(sleepTime), lowByte(sleepTime)
-	};
+		0xAB, 0x00, 0x0B, 0xFF, 0x52, 0x80,
+		(uint8_t)(year - 2000), month, day, hour, minute,
+		(uint8_t)(type), highByte(sleepTime), lowByte(sleepTime)};
 	sendCommand(sleepCmd, 14);
 }
 
@@ -984,10 +973,9 @@ void ChronosESP32::sendSleepRecord(uint16_t sleepTime, SleepType type, uint8_t m
 void ChronosESP32::sendTemperatureRecord(float temperature, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint32_t year)
 {
 	uint8_t tempCmd[] = {
-		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x13, 
-		(uint8_t)(year - 2000),	 month, day, hour, minute,
-		(uint8_t)(temperature), (uint8_t)((uint16_t)(temperature * 100.0) % 100)
-	};
+		0xAB, 0x00, 0x0A, 0xFF, 0x51, 0x13,
+		(uint8_t)(year - 2000), month, day, hour, minute,
+		(uint8_t)(temperature), (uint8_t)((uint16_t)(temperature * 100.0) % 100)};
 	sendCommand(tempCmd, 13);
 }
 
@@ -1315,18 +1303,22 @@ void ChronosESP32::onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo
 	}
 }
 
-void  ChronosESP32::splitTitle(const String &input, String &title, String &message, int icon) {
-    int index = input.indexOf(':');  // Find the first occurrence of ':'
-    int newlineIndex = input.indexOf('\n'); // Find the first occurrence of '\n'
+void ChronosESP32::splitTitle(const String &input, String &title, String &message, int icon)
+{
+	int index = input.indexOf(':');			// Find the first occurrence of ':'
+	int newlineIndex = input.indexOf('\n'); // Find the first occurrence of '\n'
 
-    if (index != -1 && index < 30 && (newlineIndex == -1 || newlineIndex > index)) {
-        // Split only if ':' is before index 30 and there's no '\n' before it
-        title = input.substring(0, index);
-        message = input.substring(index + 1);
-    } else {
-        title = appName(icon);  // No valid ':' before index 30, or '\n' appears before ':'
-        message = input; // Keep the full string in message
-    }
+	if (index != -1 && index < 30 && (newlineIndex == -1 || newlineIndex > index))
+	{
+		// Split only if ':' is before index 30 and there's no '\n' before it
+		title = input.substring(0, index);
+		message = input.substring(index + 1);
+	}
+	else
+	{
+		title = appName(icon); // No valid ':' before index 30, or '\n' appears before ':'
+		message = input;	   // Keep the full string in message
+	}
 }
 
 /*!
@@ -1390,7 +1382,7 @@ void ChronosESP32::dataReceived()
 				}
 				break;
 			}
-			
+
 			break;
 		case 0x52:
 			switch (_incomingData.data[5])
@@ -1402,7 +1394,7 @@ void ChronosESP32::dataReceived()
 				}
 				break;
 			}
-			
+
 			break;
 		case 0x53:
 			if (configurationReceivedCallback != nullptr)

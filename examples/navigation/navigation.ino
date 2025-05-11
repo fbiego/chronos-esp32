@@ -62,7 +62,8 @@ void configCallback(Config config, uint32_t a, uint32_t b)
         Serial.print("Navigation state: ");
         Serial.println(a ? "Active" : "Inactive");
         change = true;
-        if (a){
+        if (a)
+        {
             Navigation nav = watch.getNavigation();
             Serial.println(nav.directions);
             Serial.println(nav.eta);
@@ -105,7 +106,7 @@ void loop()
 
     // if (change){
     //     change = false;
-        
+
     //     Navigation nav = watch.getNavigation();
     //     if (nav.active){
     //         Serial.println(nav.directions);
@@ -115,5 +116,4 @@ void loop()
     //         Serial.println(nav.title);
     //     }
     // }
-
 }

@@ -1774,6 +1774,7 @@ void ChronosESP32::dataReceived()
 					_navigation.title = "Chronos";
 					_navigation.duration = "Inactive";
 					_navigation.distance = "";
+					_navigation.speed = "";
 					_navigation.directions = "Start navigation on Google maps";
 					_navigation.hasIcon = false;
 					_navigation.isNavigation = false;
@@ -1785,6 +1786,7 @@ void ChronosESP32::dataReceived()
 					_navigation.title = "Chronos";
 					_navigation.duration = "Disabled";
 					_navigation.distance = "";
+					_navigation.speed = "";
 					_navigation.eta = "Navigation";
 					_navigation.directions = "Check Chronos app settings";
 					_navigation.hasIcon = false;
@@ -1835,6 +1837,14 @@ void ChronosESP32::dataReceived()
 					while (_incomingData.data[i] != 0 && i < len)
 					{
 						_navigation.directions += char(_incomingData.data[i]);
+						i++;
+					}
+					i++;
+
+					_navigation.speed = "";
+					while (_incomingData.data[i] != 0 && i < len)
+					{
+						_navigation.speed += char(_incomingData.data[i]);
 						i++;
 					}
 					i++;

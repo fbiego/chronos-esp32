@@ -35,6 +35,7 @@
 ChronosESP32 watch("Chronos Nav"); // set the bluetooth name
 
 bool change = false;
+uint32_t nav_crc = 0xFFFFFFFF;
 
 void connectionCallback(bool state)
 {
@@ -70,6 +71,7 @@ void configCallback(Config config, uint32_t a, uint32_t b)
             Serial.println(nav.duration);
             Serial.println(nav.distance);
             Serial.println(nav.title);
+            Serial.println(nav.speed);
         }
         break;
     case CF_NAV_ICON:
@@ -77,6 +79,33 @@ void configCallback(Config config, uint32_t a, uint32_t b)
         Serial.println(a);
         Serial.print("Icon CRC: ");
         Serial.printf("0x%04X\n", b);
+        if (a == 2){
+            Navigation nav = watch.getNavigation();
+            if (nav_crc != nav.iconCRC)
+            {
+                nav_crc = nav.iconCRC;
+
+                for (int y = 0; y < 50; y++) { Serial.print("-"); } // draw top border
+                Serial.println();
+
+                for (int y = 0; y < 48; y++)
+                {
+                    Serial.print("|"); // draw left border
+                    for (int x = 0; x < 48; x++)
+                    {
+                        int byte_index = (y * 48 + x) / 8;
+                        int bit_pos = 7 - (x % 8);
+                        bool px_on = (nav.icon[byte_index] >> bit_pos) & 0x01;
+                        // example to draw a pixel on a TFT display
+                        // tft.drawPixel(x, y, px_on ? TFT_WHITE : TFT_BLACK);
+                        Serial.print(px_on ? "X" : " ");
+                    }
+                    Serial.println("|"); // draw right border
+                }
+                for (int y = 0; y < 50; y++) { Serial.print("-"); } // draw bottom border
+                Serial.println();
+            }
+        }
         break;
     }
 }
@@ -114,6 +143,7 @@ void loop()
     //         Serial.println(nav.duration);
     //         Serial.println(nav.distance);
     //         Serial.println(nav.title);
+    //         Serial.println(nav.speed);
     //     }
     // }
 }

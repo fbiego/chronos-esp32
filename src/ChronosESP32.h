@@ -39,7 +39,7 @@
 
 #define CHRONOSESP_VERSION_MAJOR 1
 #define CHRONOSESP_VERSION_MINOR 8
-#define CHRONOSESP_VERSION_PATCH 0
+#define CHRONOSESP_VERSION_PATCH 1
 
 #define CHRONOSESP_VERSION F(CHRONOSESP_VERSION_MAJOR "." CHRONOSESP_VERSION_MINOR "." CHRONOSESP_VERSION_PATCH)
 
@@ -154,6 +154,7 @@ struct Navigation
 	String eta;					  // estimated time of arrival (time,date)
 	String title;				  // distance to next point or title
 	String directions;			  // place info ie current street name/ instructions
+	String speed;				  // speed (available via OsmAnd app)
 	uint8_t icon[ICON_DATA_SIZE]; // navigation icon 48x48 (1bpp)
 	uint32_t iconCRC;			  // to identify whether the icon has changed
 };

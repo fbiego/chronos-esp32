@@ -66,6 +66,9 @@ void setQr(int index, String qr);
 // alarms
 Alarm getAlarm(int index);
 void setAlarm(int index, Alarm alarm);
+bool isAlarmActive(int index);
+bool isAlarmActive(Alarm alarm);
+bool isAnyAlarmActive();
 
 // control
 void sendCommand(uint8_t *command, size_t length);

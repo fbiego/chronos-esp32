@@ -27,6 +27,9 @@ getQrAt	KEYWORD2
 setQr	KEYWORD2
 getAlarm	KEYWORD2
 setAlarm	KEYWORD2
+isAlarmActive	KEYWORD2
+isAlarmActive	KEYWORD2
+isAnyAlarmActive	KEYWORD2
 sendCommand	KEYWORD2
 musicControl	KEYWORD2
 setVolume	KEYWORD2

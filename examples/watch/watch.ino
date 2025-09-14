@@ -32,6 +32,8 @@
 
 #include <ChronosESP32.h>
 
+#define LED_PIN 2
+
 ChronosESP32 watch;
 // ChronosESP32 watch("Chronos Watch"); // set the bluetooth name
 // ChronosESP32 watch("Chronos Watch", CS_360x360_130_CTF); // set the bluetooth name and screen configuration
@@ -329,6 +331,8 @@ void setup()
 {
   Serial.begin(115200);
 
+  pinMode(LED_PIN, OUTPUT);
+
   // set the callbacks before calling begin funtion
   watch.setConnectionCallback(connectionCallback);
   watch.setNotificationCallback(notificationCallback);
@@ -364,7 +368,7 @@ void loop()
 
   String time = watch.getHourC() + watch.getTime(":%M ") + watch.getAmPmC();
   Serial.println(time);
-  delay(5000);
+  delay(500);
 
   /*
   // access available notifications
@@ -389,7 +393,7 @@ void loop()
 
   /*
   // read the alarms, 8 available
-  // the alarms are only stored as received from the app, there is no function to trigger it yet
+  // the alarms are only stored as received from the app
   for (int j = 0; j < 8; j++){
     Alarm a = watch.getAlarm(j);
     Serial.print("Alarm: ");
@@ -401,7 +405,22 @@ void loop()
     Serial.print("\tState: ");
     Serial.println(a.enabled ? "Enabled": "Disabled");
   }
+
+  // you need to save alarms after receiving them from the app and restore them during setup
+  // otherwise they will be lost when the esp32 is restarted
+  Alarm a1;
+  a1.hour = 7;
+  a1.minute = 30;
+  a1.repeat = 0b0111110; // repeat from Monday to Friday
+  a1.enabled = true;
+  watch.setAlarm(0, a1); // save alarm at index 0
+  
+  watch.isAlarmActive(0); // check if alarm at index 0 is active
+  watch.isAlarmActive(watch.getAlarm(0)); // check if a specific alarm is active
+  watch.isAnyAlarmActive(); // check if any alarm is active
   */
+
+  digitalWrite(LED_PIN, watch.isAnyAlarmActive());
 
   /* // access weather forecast details
   int n = watch.getWeatherCount();

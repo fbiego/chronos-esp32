@@ -416,6 +416,53 @@ void ChronosESP32::setAlarm(int index, Alarm alarm)
 }
 
 /*!
+	@brief  check whether the alarm at the index is active
+	@param	index
+			position of the alarm to be checked
+*/
+bool ChronosESP32::isAlarmActive(int index)
+{
+	return isAlarmActive(_alarms[index % ALARM_SIZE]);
+}
+
+/*!
+	@brief  check whether the alarm is active
+	@param	alarm
+			the alarm object to be checked
+*/
+bool ChronosESP32::isAlarmActive(Alarm alarm)
+{
+	if (!alarm.enabled)
+		return false;
+
+	if (alarm.hour != this->getHour(true) || alarm.minute != this->getMinute())
+		return false;
+
+	if (alarm.repeat == 0x80 || alarm.repeat == 0x7F)
+		return true;
+
+	int day = this->getDayofWeek(); // 0=Sun, ... 6=Sat
+
+	if (day == 0) // Sunday → bit 6
+		return (alarm.repeat & (1 << 6)) != 0;
+	else // Mon–Sat → bits 0–5
+		return (alarm.repeat & (1 << (day - 1))) != 0;
+}
+
+/*!
+	@brief  check whether any alarm is active
+*/
+bool ChronosESP32::isAnyAlarmActive()
+{
+	for (int i = 0; i < ALARM_SIZE; i++)
+	{
+		if (isAlarmActive(_alarms[i]))
+			return true;
+	}
+	return false;
+}
+
+/*!
 	@brief  send a command to the app
 	@param  command
 			command data

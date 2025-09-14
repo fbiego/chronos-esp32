@@ -39,7 +39,7 @@
 
 #define CHRONOSESP_VERSION_MAJOR 1
 #define CHRONOSESP_VERSION_MINOR 8
-#define CHRONOSESP_VERSION_PATCH 1
+#define CHRONOSESP_VERSION_PATCH 2
 
 #define CHRONOSESP_VERSION F(CHRONOSESP_VERSION_MAJOR "." CHRONOSESP_VERSION_MINOR "." CHRONOSESP_VERSION_PATCH)
 
@@ -301,9 +301,11 @@ public:
 	// alarms
 	Alarm getAlarm(int index);
 	void setAlarm(int index, Alarm alarm);
+	bool isAlarmActive(int index);
+	bool isAlarmActive(Alarm alarm);
+	bool isAnyAlarmActive();
 	// TODO (alarms)
 	// alarm active callback
-	// isAlarmActive
 	// getActiveAlarms
 
 	// control

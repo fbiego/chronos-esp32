@@ -25,7 +25,7 @@ def extract_keywords(header_file_path, library_name="ChronosESP32", output_file=
 
     # Ordered function name extraction
     func_pattern = re.compile(
-        r"^[ \t]*((?!static)(?!inline)[a-zA-Z_][\w\s\*\(\)]*?)\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^;]*\)\s*;",
+        r"^[ \t]*((?!static)(?!inline)[a-zA-Z_][\w\s\*\&\(\)]*?)\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^;]*\)\s*;",
         re.MULTILINE
     )
     seen = set()

@@ -78,7 +78,7 @@ void configCallback(Config config, uint32_t a, uint32_t b)
   case CF_TIME:
     // time is saved internally
     // command with no parameters
-    Serial.println("The time has been set");
+    Serial.println(a ? "Time info received" : "The time has been set");
     Serial.println(watch.getTimeDate());
     break;
   case CF_RTW:
@@ -221,11 +221,22 @@ void configCallback(Config config, uint32_t a, uint32_t b)
     Serial.println("%");
     break;
   case CF_APP:
-    // state is saved internally
-    Serial.print("Chronos App; Code: ");
-    Serial.print(a); // int code = watch.getAppCode();
-    Serial.print(" Version: ");
-    Serial.println(watch.getAppVersion());
+    if (b == 0) {
+      // state is saved internally
+      Serial.print("Chronos App; Code: ");
+      Serial.print(a); // int code = watch.getPhoneInfo().appCode;
+      Serial.print(" Version: ");
+      Serial.println(watch.getPhoneInfo().appVersion); 
+    } else if (b == 1) {
+      // state is saved internally
+      Serial.print("Device Info; Android SDK: ");
+      Serial.print(a); // int code = watch.getPhoneInfo().sdkVersion;
+      Serial.print(" Manufacturer: ");
+      Serial.print(watch.getPhoneInfo().manufacturer);
+      Serial.print(" Model: ");
+      Serial.println(watch.getPhoneInfo().model);
+    }
+    
     break;
   case CF_QR:
     // qr links
@@ -326,6 +337,21 @@ void configCallback(Config config, uint32_t a, uint32_t b)
       }
     }
     break;
+  case CF_MUSIC:
+    // a = 0 -> music state + app info, a = 1 -> title, a = 2 -> artist
+    // use a = 2 to access all music info
+    // b = 0 -> paused, b = 1 -> playing
+    if (a == 2) {
+      Serial.print("Music state: ");
+      Serial.print(b ? "Playing" : "Paused");
+      Serial.print("\tApp: ");
+      Serial.print(watch.getMusicInfo().appName);
+      Serial.print("\tPackage: ");
+      Serial.println(watch.getMusicInfo().packageName);
+      Serial.print(watch.getMusicInfo().title);
+      Serial.print(" : ");
+      Serial.println(watch.getMusicInfo().artist);
+    }
   }
 }
 

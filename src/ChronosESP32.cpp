@@ -99,15 +99,15 @@ void ChronosESP32::begin()
 	BLEDevice::setMTU(517);
 	pServer->setCallbacks(this, false);
 
-	BLEService *pService = pServer->createService(SERVICE_UUID);
-	pCharacteristicTX = pService->createCharacteristic(CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY);
-	pCharacteristicRX = pService->createCharacteristic(CHARACTERISTIC_UUID_RX, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
+	BLEService *pService = pServer->createService(CS_SERVICE_UUID);
+	pCharacteristicTX = pService->createCharacteristic(CS_CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY);
+	pCharacteristicRX = pService->createCharacteristic(CS_CHARACTERISTIC_UUID_RX, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
 	pCharacteristicRX->setCallbacks(this);
 	pCharacteristicTX->setCallbacks(this);
 	pService->start();
 
 	BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-	pAdvertising->addServiceUUID(SERVICE_UUID);
+	pAdvertising->addServiceUUID(CS_SERVICE_UUID);
 	pAdvertising->enableScanResponse(true);
 	pAdvertising->setPreferredParams(0x06, 0x12); // functions that help with iPhone connections issue
 	pAdvertising->setName(_watchName.c_str());
@@ -227,6 +227,36 @@ bool ChronosESP32::is24Hour()
 }
 
 /*!
+	@brief  check whether quiet hours are currently active
+*/
+bool ChronosESP32::isQuietActive()
+{
+	if (!_quietEnabled)
+		return false;
+
+	uint16_t now = (this->getHour(true) * 60) + this->getMinute();
+	if (_quietStart <= _quietEnd)
+		return now >= _quietStart && now < _quietEnd;
+
+	return now >= _quietStart || now < _quietEnd;
+}
+
+/*!
+	@brief  check whether sleep time is currently active
+*/
+bool ChronosESP32::isSleepActive()
+{
+	if (!_sleepEnabled)
+		return false;
+
+	uint16_t now = (this->getHour(true) * 60) + this->getMinute();
+	if (_sleepStart <= _sleepEnd)
+		return now >= _sleepStart && now < _sleepEnd;
+
+	return now >= _sleepStart || now < _sleepEnd;
+}
+
+/*!
 	@brief  return the mac address
 */
 String ChronosESP32::getAddress()
@@ -264,9 +294,9 @@ bool ChronosESP32::isCameraReady()
 */
 int ChronosESP32::getNotificationCount()
 {
-	if (_notificationIndex + 1 >= NOTIF_SIZE)
+	if (_notificationIndex + 1 >= CS_NOTIF_SIZE)
 	{
-		return NOTIF_SIZE; // the buffer is full
+		return CS_NOTIF_SIZE; // the buffer is full
 	}
 	else
 	{
@@ -279,9 +309,9 @@ int ChronosESP32::getNotificationCount()
 	@param  index
 			position of the notification to be returned, at 0 is the latest received
 */
-Notification ChronosESP32::getNotificationAt(int index)
+Notification &ChronosESP32::getNotificationAt(int index)
 {
-	int latestIndex = (_notificationIndex - index + NOTIF_SIZE) % NOTIF_SIZE;
+	int latestIndex = (_notificationIndex - index + CS_NOTIF_SIZE) % CS_NOTIF_SIZE;
 	return _notifications[latestIndex];
 }
 
@@ -304,7 +334,7 @@ void ChronosESP32::clearNotifications()
 */
 void ChronosESP32::setContact(int index, Contact contact)
 {
-	_contacts[index % CONTACTS_SIZE] = contact;
+	_contacts[index % CS_CONTACTS_SIZE] = contact;
 }
 
 /*!
@@ -312,9 +342,9 @@ void ChronosESP32::setContact(int index, Contact contact)
 	@param  index
 			position of the contact to be returned
 */
-Contact ChronosESP32::getContact(int index)
+Contact &ChronosESP32::getContact(int index)
 {
-	return _contacts[index % CONTACTS_SIZE];
+	return _contacts[index % CS_CONTACTS_SIZE];
 }
 
 /*!
@@ -328,9 +358,9 @@ int ChronosESP32::getContactCount()
 /*!
 	@brief  return the sos contact
 */
-Contact ChronosESP32::getSoSContact()
+Contact &ChronosESP32::getSoSContact()
 {
-	return _contacts[_sosContact % CONTACTS_SIZE];
+	return _contacts[_sosContact % CS_CONTACTS_SIZE];
 }
 
 /*!
@@ -378,9 +408,9 @@ String ChronosESP32::getWeatherTime()
 	@param  index
 			position of the weather to be returned
 */
-Weather ChronosESP32::getWeatherAt(int index)
+Weather &ChronosESP32::getWeatherAt(int index)
 {
-	return _weather[index % WEATHER_SIZE];
+	return _weather[index % CS_WEATHER_SIZE];
 }
 
 /*!
@@ -388,15 +418,15 @@ Weather ChronosESP32::getWeatherAt(int index)
 	@param  hour
 			position of the weather to be returned
 */
-HourlyForecast ChronosESP32::getForecastHour(int hour)
+HourlyForecast &ChronosESP32::getForecastHour(int hour)
 {
-	return _hourlyForecast[hour % FORECAST_SIZE];
+	return _hourlyForecast[hour % CS_FORECAST_SIZE];
 }
 
 /*!
 	@brief  return the weather location data
 */
-WeatherLocation ChronosESP32::getWeatherLocation()
+WeatherLocation &ChronosESP32::getWeatherLocation()
 {
 	return _weatherLocation;
 }
@@ -406,9 +436,9 @@ WeatherLocation ChronosESP32::getWeatherLocation()
 	@param	index
 			position of the alarm to be returned
 */
-Alarm ChronosESP32::getAlarm(int index)
+Alarm &ChronosESP32::getAlarm(int index)
 {
-	return _alarms[index % ALARM_SIZE];
+	return _alarms[index % CS_ALARM_SIZE];
 }
 
 /*!
@@ -420,7 +450,7 @@ Alarm ChronosESP32::getAlarm(int index)
 */
 void ChronosESP32::setAlarm(int index, Alarm alarm)
 {
-	_alarms[index % ALARM_SIZE] = alarm;
+	_alarms[index % CS_ALARM_SIZE] = alarm;
 }
 
 /*!
@@ -430,7 +460,7 @@ void ChronosESP32::setAlarm(int index, Alarm alarm)
 */
 bool ChronosESP32::isAlarmActive(int index)
 {
-	return isAlarmActive(_alarms[index % ALARM_SIZE]);
+	return isAlarmActive(_alarms[index % CS_ALARM_SIZE]);
 }
 
 /*!
@@ -462,12 +492,44 @@ bool ChronosESP32::isAlarmActive(Alarm alarm)
 */
 bool ChronosESP32::isAnyAlarmActive()
 {
-	for (int i = 0; i < ALARM_SIZE; i++)
+	for (int i = 0; i < CS_ALARM_SIZE; i++)
 	{
 		if (isAlarmActive(_alarms[i]))
 			return true;
 	}
 	return false;
+}
+
+/*!
+	@brief  get currently active alarms
+	@param  alarms
+			buffer to receive active alarms
+	@param  maxCount
+			maximum alarms to write to the buffer
+*/
+int ChronosESP32::getActiveAlarms(Alarm *alarms, int maxCount)
+{
+	if (alarms == nullptr || maxCount <= 0)
+		return 0;
+
+	int count = 0;
+	const uint8_t hour = this->getHour(true);
+	const uint8_t minute = this->getMinute();
+	const uint8_t day = this->getDayofWeek();
+	const uint8_t repeatMask = day == 0 ? (1 << 6) : (1 << (day - 1));
+
+	for (int i = 0; i < CS_ALARM_SIZE && count < maxCount; i++)
+	{
+		Alarm &alarm = _alarms[i];
+
+		if (!alarm.enabled || alarm.hour != hour || alarm.minute != minute)
+			continue;
+
+		if (alarm.repeat == 0x80 || alarm.repeat == 0x7F || (alarm.repeat & repeatMask) != 0)
+			alarms[count++] = alarm;
+	}
+
+	return count;
 }
 
 /*!
@@ -610,7 +672,7 @@ String ChronosESP32::getAmPmC(bool caps)
 /*!
 	@brief  get remote touch data
 */
-RemoteTouch ChronosESP32::getTouch()
+RemoteTouch &ChronosESP32::getTouch()
 {
 	return _touch;
 }
@@ -622,12 +684,12 @@ RemoteTouch ChronosESP32::getTouch()
 */
 String ChronosESP32::getQrAt(int index)
 {
-	return _qrLinks[index % QR_SIZE];
+	return _qrLinks[index % CS_QR_SIZE];
 }
 
 void ChronosESP32::setQr(int index, String qr)
 {
-	_qrLinks[index % QR_SIZE] = qr;
+	_qrLinks[index % CS_QR_SIZE] = qr;
 }
 
 /*!
@@ -705,7 +767,7 @@ void ChronosESP32::setHealthRequestCallback(void (*callback)(HealthRequest, bool
 */
 void ChronosESP32::sendInfo()
 {
-	uint8_t infoCmd[] = {0xab, 0x00, 0x11, 0xff, 0x92, 0xc0, CHRONOSESP_VERSION_MAJOR, (CHRONOSESP_VERSION_MINOR * 10 + CHRONOSESP_VERSION_PATCH), 0x00, 0xfb, 0x1e, 0x40, 0xc0, 0x0e, 0x32, 0x28, 0x00, 0xe2, _screenConf, 0x80};
+	uint8_t infoCmd[] = {0xab, 0x00, 0x11, 0xff, 0x92, 0xc0, CS_VERSION_MAJOR, (CS_VERSION_MINOR * 10 + CS_VERSION_PATCH), 0x00, 0xfb, 0x1e, 0x40, 0xc0, 0x0e, 0x32, 0x28, 0x00, 0xe2, _screenConf, 0x80};
 	sendCommand(infoCmd, 20);
 }
 
@@ -715,7 +777,7 @@ void ChronosESP32::sendInfo()
 void ChronosESP32::sendESP()
 {
 	String espInfo;
-	espInfo += "ChronosESP32 v" + String(CHRONOSESP_VERSION_MAJOR) + "." + String(CHRONOSESP_VERSION_MINOR) + "." + String(CHRONOSESP_VERSION_PATCH);
+	espInfo += "ChronosESP32 v" + String(CS_VERSION_MAJOR) + "." + String(CS_VERSION_MINOR) + "." + String(CS_VERSION_PATCH);
 	espInfo += "\n" + String(ESP.getChipModel());
 	espInfo += " @" + String(ESP.getCpuFreqMHz()) + "Mhz";
 	espInfo += " Cores:" + String(ESP.getChipCores());
@@ -1134,7 +1196,7 @@ void ChronosESP32::sendSleepRecord(uint16_t sleepTime, SleepType type, DateTime 
 */
 bool ChronosESP32::isPhoneCharging()
 {
-	return _phoneCharging;
+	return _phoneInfo.isCharging;
 }
 
 /*!
@@ -1142,7 +1204,7 @@ bool ChronosESP32::isPhoneCharging()
 */
 uint8_t ChronosESP32::getPhoneBattery()
 {
-	return _phoneBatteryLevel;
+	return _phoneInfo.batteryLevel;
 }
 
 /*!
@@ -1150,7 +1212,7 @@ uint8_t ChronosESP32::getPhoneBattery()
 */
 int ChronosESP32::getAppCode()
 {
-	return _appCode;
+	return _phoneInfo.appCode;
 }
 /*!
 	@brief  app version name
@@ -1158,15 +1220,42 @@ int ChronosESP32::getAppCode()
 
 String ChronosESP32::getAppVersion()
 {
-	return _appVersion;
+	return _phoneInfo.appVersion;
 }
 
 /*!
 	@brief  get navigation data
 */
-Navigation ChronosESP32::getNavigation()
+Navigation &ChronosESP32::getNavigation()
 {
 	return _navigation;
+}
+
+/*!
+	@brief  get navigation icon
+	@return pointer to the icon data
+*/
+const uint8_t *ChronosESP32::getNavigationIcon()
+{
+	return _navigation.icon;
+}
+
+/**
+	@brief  get phone info
+	@return PhoneInfo
+*/
+PhoneInfo &ChronosESP32::getPhoneInfo()
+{
+	return _phoneInfo;
+}
+
+/**
+	@brief  get music info
+	@return MusicInfo
+*/
+MusicInfo &ChronosESP32::getMusicInfo()
+{
+	return _musicInfo;
 }
 
 /*!
@@ -1522,14 +1611,14 @@ void ChronosESP32::dataReceived()
 			if (state == 0x02)
 			{
 				_notificationIndex++;
-				_notifications[_notificationIndex % NOTIF_SIZE].icon = icon;
-				_notifications[_notificationIndex % NOTIF_SIZE].app = appName(icon);
-				_notifications[_notificationIndex % NOTIF_SIZE].time = this->getTime("%H:%M");
-				splitTitle(message, _notifications[_notificationIndex % NOTIF_SIZE].title, _notifications[_notificationIndex % NOTIF_SIZE].message, icon);
+				_notifications[_notificationIndex % CS_NOTIF_SIZE].icon = icon;
+				_notifications[_notificationIndex % CS_NOTIF_SIZE].app = appName(icon);
+				_notifications[_notificationIndex % CS_NOTIF_SIZE].time = this->getTime("%H:%M");
+				splitTitle(message, _notifications[_notificationIndex % CS_NOTIF_SIZE].title, _notifications[_notificationIndex % CS_NOTIF_SIZE].message, icon);
 
 				if (notificationReceivedCallback != nullptr)
 				{
-					notificationReceivedCallback(_notifications[_notificationIndex % NOTIF_SIZE]);
+					notificationReceivedCallback(_notifications[_notificationIndex % CS_NOTIF_SIZE]);
 				}
 			}
 		}
@@ -1541,10 +1630,10 @@ void ChronosESP32::dataReceived()
 			uint8_t repeat = _incomingData.data[10];
 			bool enabled = _incomingData.data[7];
 			uint32_t index = (uint32_t)_incomingData.data[6];
-			_alarms[index % ALARM_SIZE].hour = hour;
-			_alarms[index % ALARM_SIZE].minute = minute;
-			_alarms[index % ALARM_SIZE].repeat = repeat;
-			_alarms[index % ALARM_SIZE].enabled = enabled;
+			_alarms[index % CS_ALARM_SIZE].hour = hour;
+			_alarms[index % CS_ALARM_SIZE].minute = minute;
+			_alarms[index % CS_ALARM_SIZE].repeat = repeat;
+			_alarms[index % CS_ALARM_SIZE].enabled = enabled;
 			if (configurationReceivedCallback != nullptr)
 			{
 				uint32_t alarm = ((uint32_t)hour << 24) | ((uint32_t)minute << 16) | ((uint32_t)repeat << 8) | ((uint32_t)enabled);
@@ -1583,15 +1672,19 @@ void ChronosESP32::dataReceived()
 			}
 			break;
 		case 0x76:
-			if (configurationReceivedCallback != nullptr)
 			{
 				uint8_t hour = _incomingData.data[7];
 				uint8_t minute = _incomingData.data[8];
 				uint8_t hour2 = _incomingData.data[9];
 				uint8_t minute2 = _incomingData.data[10];
-				bool enabled = (uint32_t)_incomingData.data[6];
-				uint32_t qt = ((uint32_t)hour << 24) | ((uint32_t)minute << 16) | ((uint32_t)hour2 << 8) | ((uint32_t)minute2);
-				configurationReceivedCallback(CF_QUIET, enabled, qt);
+				_quietEnabled = _incomingData.data[6];
+				_quietStart = (hour * 60) + minute;
+				_quietEnd = (hour2 * 60) + minute2;
+				if (configurationReceivedCallback != nullptr)
+				{
+					uint32_t qt = ((uint32_t)hour << 24) | ((uint32_t)minute << 16) | ((uint32_t)hour2 << 8) | ((uint32_t)minute2);
+					configurationReceivedCallback(CF_QUIET, _quietEnabled, qt);
+				}
 			}
 			break;
 		case 0x77:
@@ -1632,7 +1725,7 @@ void ChronosESP32::dataReceived()
 			_weatherSize = 0;
 			for (int k = 0; k < (len - 6) / 2; k++)
 			{
-				if (k >= WEATHER_SIZE)
+				if (k >= CS_WEATHER_SIZE)
 				{
 					break;
 				}
@@ -1655,7 +1748,7 @@ void ChronosESP32::dataReceived()
 		{
 			for (int k = 0; k < (len - 6) / 2; k++)
 			{
-				if (k >= WEATHER_SIZE)
+				if (k >= CS_WEATHER_SIZE)
 				{
 					break;
 				}
@@ -1681,26 +1774,30 @@ void ChronosESP32::dataReceived()
 		}
 		break;
 		case 0x7F:
-			if (configurationReceivedCallback != nullptr)
 			{
 				uint8_t hour = _incomingData.data[7];
 				uint8_t minute = _incomingData.data[8];
 				uint8_t hour2 = _incomingData.data[9];
 				uint8_t minute2 = _incomingData.data[10];
-				bool enabled = _incomingData.data[6];
-				uint32_t slp = ((uint32_t)hour << 24) | ((uint32_t)minute << 16) | ((uint32_t)hour2 << 8) | ((uint32_t)minute2);
-				configurationReceivedCallback(CF_SLEEP, enabled, slp);
+				_sleepEnabled = _incomingData.data[6];
+				_sleepStart = (hour * 60) + minute;
+				_sleepEnd = (hour2 * 60) + minute2;
+				if (configurationReceivedCallback != nullptr)
+				{
+					uint32_t slp = ((uint32_t)hour << 24) | ((uint32_t)minute << 16) | ((uint32_t)hour2 << 8) | ((uint32_t)minute2);
+					configurationReceivedCallback(CF_SLEEP, _sleepEnabled, slp);
+				}
 			}
 			break;
 		case 0x91:
 
 			if (_incomingData.data[3] == 0xFE)
 			{
-				_phoneCharging = _incomingData.data[6] == 1;
-				_phoneBatteryLevel = _incomingData.data[7];
+				_phoneInfo.isCharging = _incomingData.data[6] == 1;
+				_phoneInfo.batteryLevel = _incomingData.data[7];
 				if (configurationReceivedCallback != nullptr)
 				{
-					configurationReceivedCallback(CF_PBAT, _incomingData.data[6], _phoneBatteryLevel);
+					configurationReceivedCallback(CF_PBAT, _incomingData.data[6], _phoneInfo.batteryLevel);
 				}
 			}
 
@@ -1724,6 +1821,72 @@ void ChronosESP32::dataReceived()
 				uint32_t color = ((uint32_t)_incomingData.data[5] << 16) | ((uint32_t)_incomingData.data[6] << 8) | (uint32_t)_incomingData.data[7];
 				uint32_t select = ((uint32_t)(_incomingData.data[8]) << 16) | (uint32_t)_incomingData.data[9];
 				configurationReceivedCallback(CF_FONT, color, select);
+			}
+			break;
+		case 0x9D:
+			if (_incomingData.data[3] == 0xFE)
+			{
+				switch (_incomingData.data[5])
+				{
+				case 0x80:
+				{
+					_musicInfo.state = _incomingData.data[6];
+					_musicInfo.backgroundColor = ((uint32_t)_incomingData.data[7] << 16) | ((uint32_t)_incomingData.data[8] << 8) | (uint32_t)_incomingData.data[9];
+					_musicInfo.textColor = ((uint32_t)_incomingData.data[10] << 16) | ((uint32_t)_incomingData.data[11] << 8) | (uint32_t)_incomingData.data[12];
+					int i = 13;
+					_musicInfo.appName = "";
+					while (_incomingData.data[i] != 0 && i < len)
+					{
+						_musicInfo.appName += char(_incomingData.data[i]);
+						i++;
+					}
+					i++;
+
+					_musicInfo.packageName = "";
+					while (_incomingData.data[i] != 0 && i < len)
+					{
+						_musicInfo.packageName += char(_incomingData.data[i]);
+						i++;
+					}
+
+					if (configurationReceivedCallback != nullptr)
+					{
+						configurationReceivedCallback(CF_MUSIC, 0, _musicInfo.state);
+					}
+				}
+				break;
+				case 0x81:
+				{
+					_musicInfo.title = "";
+					int i = 7;
+					while (_incomingData.data[i] != 0 && i < len)
+					{
+						_musicInfo.title += char(_incomingData.data[i]);
+						i++;
+					}
+					if (configurationReceivedCallback != nullptr)
+					{
+						configurationReceivedCallback(CF_MUSIC, 1, _musicInfo.state);
+					}
+				}
+				break;
+				case 0x82:
+				{
+					_musicInfo.artist = "";
+					int i = 7;
+					while (_incomingData.data[i] != 0 && i < len)
+					{
+						_musicInfo.artist += char(_incomingData.data[i]);
+						i++;
+					}
+					if (configurationReceivedCallback != nullptr)
+					{
+						configurationReceivedCallback(CF_MUSIC, 2, _musicInfo.state);
+					}
+				}
+				break;
+			}
+
 			}
 			break;
 		case 0xA2:
@@ -1805,17 +1968,43 @@ void ChronosESP32::dataReceived()
 		case 0xCA:
 			if (_incomingData.data[3] == 0xFE)
 			{
-				_appCode = (_incomingData.data[6] * 256) + _incomingData.data[7];
-				_appVersion = "";
+				_phoneInfo.appCode = (_incomingData.data[6] * 256) + _incomingData.data[7];
+				_phoneInfo.appVersion = "";
 				for (int i = 8; i < len; i++)
 				{
-					_appVersion += (char)_incomingData.data[i];
+					_phoneInfo.appVersion += (char)_incomingData.data[i];
 				}
 				if (configurationReceivedCallback != nullptr)
 				{
-					configurationReceivedCallback(CF_APP, _appCode, 0);
+					configurationReceivedCallback(CF_APP, _phoneInfo.appCode, 0);
 				}
 				_sendESP = true;
+			}
+			break;
+		case 0xCB:
+			if (_incomingData.data[3] == 0xFE)
+			{
+				_phoneInfo.sdkVersion = (_incomingData.data[6] * 256) + _incomingData.data[7];
+				_phoneInfo.manufacturer = "";
+				int i = 8;
+				while (_incomingData.data[i] != 0 && i < len)
+				{
+					_phoneInfo.manufacturer += (char)_incomingData.data[i];
+					i++;
+				}
+				i++;
+
+				_phoneInfo.model = "";
+				while (_incomingData.data[i] != 0 && i < len)
+				{
+					_phoneInfo.model += (char)_incomingData.data[i];
+					i++;
+				}
+
+				if (configurationReceivedCallback != nullptr)
+				{
+					configurationReceivedCallback(CF_APP, _phoneInfo.sdkVersion, 1);
+				}
 			}
 			break;
 		case 0xCC:
@@ -1963,7 +2152,7 @@ void ChronosESP32::dataReceived()
 				int hour = _incomingData.data[7];
 				for (int z = 0; z < size; z++)
 				{
-					if (hour + z >= FORECAST_SIZE)
+					if (hour + z >= CS_FORECAST_SIZE)
 					{
 						break;
 					}

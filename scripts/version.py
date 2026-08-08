@@ -17,9 +17,9 @@ def extract_version_from_json(file_path):
 
 def extract_version_from_header(file_path):
     content = Path(file_path).read_text()
-    major = re.search(r"#define\s+CHRONOSESP_VERSION_MAJOR\s+(\d+)", content)
-    minor = re.search(r"#define\s+CHRONOSESP_VERSION_MINOR\s+(\d+)", content)
-    patch = re.search(r"#define\s+CHRONOSESP_VERSION_PATCH\s+(\d+)", content)
+    major = re.search(r"#define\s+CS_VERSION_MAJOR\s+(\d+)", content)
+    minor = re.search(r"#define\s+CS_VERSION_MINOR\s+(\d+)", content)
+    patch = re.search(r"#define\s+CS_VERSION_PATCH\s+(\d+)", content)
     if not (major and minor and patch):
         raise ValueError("Version macros not found in header")
     return f"{major.group(1)}.{minor.group(1)}.{patch.group(1)}"

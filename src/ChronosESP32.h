@@ -37,25 +37,28 @@
 #include <NimBLEDevice.h>
 #include <ESP32Time.h>
 
-#define CHRONOSESP_VERSION_MAJOR 1
-#define CHRONOSESP_VERSION_MINOR 9
-#define CHRONOSESP_VERSION_PATCH 0
+#define CS_VERSION_MAJOR 1
+#define CS_VERSION_MINOR 9
+#define CS_VERSION_PATCH 1
 
-#define CHRONOSESP_VERSION F(CHRONOSESP_VERSION_MAJOR "." CHRONOSESP_VERSION_MINOR "." CHRONOSESP_VERSION_PATCH)
+#define CS_VERSION F(CS_VERSION_MAJOR "." CS_VERSION_MINOR "." CS_VERSION_PATCH)
 
-#define NOTIF_SIZE 10
-#define WEATHER_SIZE 7
-#define ALARM_SIZE 8
-#define DATA_SIZE 512
-#define FORECAST_SIZE 24
-#define QR_SIZE 9
-#define ICON_SIZE 48
-#define ICON_DATA_SIZE (ICON_SIZE * ICON_SIZE) / 8
-#define CONTACTS_SIZE 255
+#ifndef CS_NOTIF_SIZE
+#define CS_NOTIF_SIZE 10
+#endif
 
-#define SERVICE_UUID "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-#define CHARACTERISTIC_UUID_RX "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-#define CHARACTERISTIC_UUID_TX "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+#define CS_WEATHER_SIZE 7
+#define CS_ALARM_SIZE 8
+#define CS_DATA_SIZE 512
+#define CS_FORECAST_SIZE 24
+#define CS_QR_SIZE 9
+#define CS_ICON_SIZE 48
+#define CS_ICON_DATA_SIZE (CS_ICON_SIZE * CS_ICON_SIZE) / 8
+#define CS_CONTACTS_SIZE 255
+
+#define CS_SERVICE_UUID "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+#define CS_CHARACTERISTIC_UUID_RX "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+#define CS_CHARACTERISTIC_UUID_TX "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 enum Control
 {
@@ -97,6 +100,18 @@ struct Weather
 	int uv;
 };
 
+/**
+ * @brief Weather icon codes:
+ 0 | img_sun_cloud | Partly cloudy
+1 | img_sunny | Sunny
+2 | img_snow | Snow
+3 | img_rainy | Rain
+4 | img_cloud | Cloudy
+5 | img_tornado | Tornado / Extreme
+6 | img_wind | Wind
+7 | img_haze | Haze / Fog
+ */
+
 struct WeatherLocation
 {
 	String city;
@@ -127,7 +142,7 @@ struct ChronosTimer
 struct ChronosData
 {
 	int length;
-	uint8_t data[DATA_SIZE];
+	uint8_t data[CS_DATA_SIZE];
 };
 
 struct Alarm
@@ -164,7 +179,7 @@ struct Navigation
 	String title;				  // distance to next point or title
 	String directions;			  // place info ie current street name/ instructions
 	String speed;				  // speed (available via OsmAnd app)
-	uint8_t icon[ICON_DATA_SIZE]; // navigation icon 48x48 (1bpp)
+	uint8_t icon[CS_ICON_DATA_SIZE]; // navigation icon 48x48 (1bpp)
 	uint32_t iconCRC;			  // to identify whether the icon has changed
 };
 
@@ -182,6 +197,28 @@ struct DateTime
 	uint8_t day;
 	uint8_t month;
 	uint32_t year;
+};
+
+struct PhoneInfo
+{
+	bool isCharging;
+	uint8_t batteryLevel;
+	int appCode;
+	int sdkVersion;
+	String appVersion;
+	String manufacturer;
+	String model;
+};
+
+struct MusicInfo
+{
+	uint8_t state;
+	uint32_t textColor;
+	uint32_t backgroundColor;
+	String title;
+	String artist;
+	String appName;
+	String packageName;
 };
 
 enum Config
@@ -210,6 +247,7 @@ enum Config
 	CF_NAV_ICON, // navigation icon received
 	CF_CONTACT,	 // contacts data received
 	CF_SYNCED,	 // data sync completed (esp32 can go to sleep if needed)
+	CF_MUSIC,	 // music info received (b = 0 paused, b = 1 playing)
 };
 
 enum HealthRequest
@@ -299,35 +337,33 @@ public:
 
 	// notifications
 	int getNotificationCount();
-	Notification getNotificationAt(int index);
+	Notification &getNotificationAt(int index);
 	void clearNotifications();
 
 	// weather
 	int getWeatherCount();
 	String getWeatherCity();
 	String getWeatherTime();
-	Weather getWeatherAt(int index);
-	HourlyForecast getForecastHour(int hour);
-	WeatherLocation getWeatherLocation();
+	Weather &getWeatherAt(int index);
+	HourlyForecast &getForecastHour(int hour);
+	WeatherLocation &getWeatherLocation();
 
 	// extras
-	RemoteTouch getTouch();
+	RemoteTouch &getTouch();
 	String getQrAt(int index);
 	void setQr(int index, String qr);
 
-	// TODO (settings)
-	// isQuietActive
-	// isSleepActive
+	// settings
+	bool isQuietActive();
+	bool isSleepActive();
 
 	// alarms
-	Alarm getAlarm(int index);
+	Alarm &getAlarm(int index);
 	void setAlarm(int index, Alarm alarm);
 	bool isAlarmActive(int index);
 	bool isAlarmActive(Alarm alarm);
 	bool isAnyAlarmActive();
-	// TODO (alarms)
-	// alarm active callback
-	// getActiveAlarms
+	int getActiveAlarms(Alarm *alarms, int maxCount = CS_ALARM_SIZE);
 
 	// control
 	void sendCommand(uint8_t *command, size_t length, bool force_chunked = false);
@@ -345,14 +381,20 @@ public:
 	int getAppCode();
 	String getAppVersion();
 
+	PhoneInfo &getPhoneInfo();
+
 	// navigation
-	Navigation getNavigation();
+	Navigation &getNavigation();
+	const uint8_t *getNavigationIcon();
+
+	MusicInfo &getMusicInfo();
+
 
 	// contacts
 	void setContact(int index, Contact contact);
-	Contact getContact(int index);
+	Contact &getContact(int index);
 	int getContactCount();
-	Contact getSoSContact();
+	Contact &getSoSContact();
 	void setSOSContactIndex(int index);
 	int getSOSContactIndex();
 
@@ -402,34 +444,35 @@ private:
 	bool _batteryChanged;
 	bool _hour24;
 	bool _cameraReady;
+	bool _quietEnabled = false;
+	bool _sleepEnabled = false;
+	uint16_t _quietStart = 0;
+	uint16_t _quietEnd = 0;
+	uint16_t _sleepStart = 0;
+	uint16_t _sleepEnd = 0;
 
-	uint8_t _phoneBatteryLevel = 0;
-	bool _phoneCharging;
 	bool _notifyPhone = true;
 	bool _sendESP;
 	bool _chunked;
 
-	Notification _notifications[NOTIF_SIZE];
+	Notification _notifications[CS_NOTIF_SIZE];
 	int _notificationIndex;
 
-	Weather _weather[WEATHER_SIZE];
+	Weather _weather[CS_WEATHER_SIZE];
 	String _weatherCity;
 	String _weatherTime;
 	int _weatherSize;
 	WeatherLocation _weatherLocation;
 
-	HourlyForecast _hourlyForecast[FORECAST_SIZE];
+	HourlyForecast _hourlyForecast[CS_FORECAST_SIZE];
 
 	RemoteTouch _touch;
 
-	int _appCode;
-	String _appVersion;
+	Alarm _alarms[CS_ALARM_SIZE];
 
-	Alarm _alarms[ALARM_SIZE];
+	String _qrLinks[CS_QR_SIZE];
 
-	String _qrLinks[QR_SIZE];
-
-	Contact _contacts[CONTACTS_SIZE];
+	Contact _contacts[CS_CONTACTS_SIZE];
 	int _sosContact;
 	int _contactSize;
 
@@ -442,6 +485,9 @@ private:
 	ChronosScreen _screenConf = CS_240x240_128_CTF;
 
 	Navigation _navigation;
+
+	PhoneInfo _phoneInfo;
+	MusicInfo _musicInfo;
 
 	void (*connectionChangeCallback)(bool) = nullptr;
 	void (*notificationReceivedCallback)(Notification) = nullptr;

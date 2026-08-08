@@ -23,95 +23,9 @@ Setup your ESP32 as a smartwatch and connect to Chronos app over BLE.
 
 [`Chronos`](https://chronos.ke/app?id=esp32)
 
-## Functions
+## API
 
-```
-// library
-ChronosESP32();
-ChronosESP32(String name, ChronosScreen screen = CS_240x240_128_CTF); // set the BLE name
-void begin();														  // initializes BLE server
-void stop(bool clearAll = true);									  // stop the BLE server
-void loop();														  // handles routine functions
-bool isRunning();													  // check whether BLE server is inited and running
-void setName(String name);											  // set the BLE name (call before begin)
-void setScreen(ChronosScreen screen);								  // set the screen config (call before begin)
-void setChunkedTransfer(bool chunked);
-bool isSubscribed();
-
-// watch
-bool isConnected();
-void set24Hour(bool mode);
-bool is24Hour();
-String getAddress();
-void setBattery(uint8_t level, bool charging = false);
-bool isCameraReady();
-void syncRequest();
-
-// notifications
-int getNotificationCount();
-Notification getNotificationAt(int index);
-void clearNotifications();
-
-// weather
-int getWeatherCount();
-String getWeatherCity();
-String getWeatherTime();
-Weather getWeatherAt(int index);
-HourlyForecast getForecastHour(int hour);
-WeatherLocation getWeatherLocation();
-
-// extras
-RemoteTouch getTouch();
-String getQrAt(int index);
-void setQr(int index, String qr);
-
-// alarms
-Alarm getAlarm(int index);
-void setAlarm(int index, Alarm alarm);
-bool isAlarmActive(int index);
-bool isAlarmActive(Alarm alarm);
-bool isAnyAlarmActive();
-
-// control
-void sendCommand(uint8_t *command, size_t length);
-void musicControl(Control command);
-void setVolume(uint8_t level);
-bool capturePhoto();
-void findPhone(bool state);
-
-// phone battery status
-void setNotifyBattery(bool state);
-bool isPhoneCharging();
-uint8_t getPhoneBattery();
-
-// app info
-int getAppCode();
-String getAppVersion();
-
-// navigation
-Navigation getNavigation();
-
-// contacts
-void setContact(int index, Contact contact);
-Contact getContact(int index);
-int getContactCount();
-Contact getSoSContact();
-void setSOSContactIndex(int index);
-int getSOSContactIndex();
-
-// helper functions for ESP32Time
-int getHourC();					   // return hour based on 24-hour variable (0-12 or 0-23)
-String getHourZ();				   // return zero padded hour string based on 24-hour variable (00-12 or 00-23)
-String getAmPmC(bool caps = true); // return (no caps)am/pm or (caps)AM/PM for 12 hour mode or none for 24 hour mode
-
-// callbacks
-void setConnectionCallback(void (*callback)(bool));
-void setNotificationCallback(void (*callback)(Notification));
-void setRingerCallback(void (*callback)(String, bool));
-void setConfigurationCallback(void (*callback)(Config, uint32_t, uint32_t));
-void setDataCallback(void (*callback)(uint8_t *, int));
-void setRawDataCallback(void (*callback)(uint8_t *, int));
-```
+See the [ChronosESP32 API reference](api.md).
 
 ## PlatformIO
 

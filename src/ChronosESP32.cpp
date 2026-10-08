@@ -532,6 +532,13 @@ int ChronosESP32::getActiveAlarms(Alarm *alarms, int maxCount)
 	return count;
 }
 
+// Pause after each notify() in sendCommand(). This runs synchronously from loop(), so it blocks
+// the caller once per chunk (was 200ms: up to ~5s for a long chunked send such as sendESP()).
+// Override with -D CS_NOTIFY_DELAY_MS=<ms> if a phone drops packets.
+#ifndef CS_NOTIFY_DELAY_MS
+#define CS_NOTIFY_DELAY_MS 30
+#endif
+
 /*!
 	@brief  send a command to the app
 	@param  command
@@ -554,14 +561,14 @@ void ChronosESP32::sendCommand(uint8_t *command, size_t length, bool force_chunk
 		// Send the entire command if it fits in one packet
 		pCharacteristicTX->setValue(command, length);
 		pCharacteristicTX->notify();
-		vTaskDelay(200 / portTICK_PERIOD_MS);
+		vTaskDelay(CS_NOTIFY_DELAY_MS / portTICK_PERIOD_MS);
 	}
 	else
 	{
 		// Send the first 20 bytes as is (no header)
 		pCharacteristicTX->setValue(command, 20);
 		pCharacteristicTX->notify();
-		vTaskDelay(200 / portTICK_PERIOD_MS);
+		vTaskDelay(CS_NOTIFY_DELAY_MS / portTICK_PERIOD_MS);
 
 		// Send the remaining bytes with a header
 		const size_t maxPayloadSize = 19; // Payload size excluding header
@@ -583,7 +590,7 @@ void ChronosESP32::sendCommand(uint8_t *command, size_t length, bool force_chunk
 			// Send the chunk
 			pCharacteristicTX->setValue(chunk, bytesToSend + 1);
 			pCharacteristicTX->notify();
-			vTaskDelay(200 / portTICK_PERIOD_MS);
+			vTaskDelay(CS_NOTIFY_DELAY_MS / portTICK_PERIOD_MS);
 
 			// Update offset
 			offset += bytesToSend;
